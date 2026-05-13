@@ -1,0 +1,11 @@
+chapter AFP
+
+session ByzantineCD (AFP) = FLP +
+  options [timeout = 600, document = false]
+  theories
+    ByzantineSystem
+    Events
+    CD
+    BlackBox
+    Reductions
+    Impossibility
