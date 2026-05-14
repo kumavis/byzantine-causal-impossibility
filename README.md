@@ -66,15 +66,16 @@ B-happened-before relation):
 
 ## File structure
 
-| File                 | Purpose                                                                                                              |
-|----------------------|----------------------------------------------------------------------------------------------------------------------|
-| `ROOT`               | Session declaration; depends on AFP `FLP`.                                                                           |
-| `ByzantineSystem.thy`| Process partition (correct ⊎ byzantine), Consensus solver signature, FLP impossibility imported as a locale axiom.   |
-| `Events.thy`         | Event datatype, per-process and global histories, program-order, message-order, happened-before relation, `hb_eval`. |
-| `CD.thy`             | `valid(F)`, false positives/negatives, adversary model, CD-solver signature, `produces_valid_F`, `CD_solvable`.      |
-| `BlackBox.thy`       | `w_value`, BB output record, `solves_BlackBox`, `BlackBox_solvable`.                                                 |
-| `Reductions.thy`     | The two reductions of §4.2.  Constructive proofs in declarative Isar.                                                |
-| `Impossibility.thy`  | Theorems 3, 4, 5 plus a summary corollary.                                                                           |
+| File                       | Purpose                                                                                                              |
+|----------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `ROOT`                     | Session declaration; depends on AFP `FLP`.                                                                           |
+| `ByzantineSystem.thy`      | Process partition (correct ⊎ byzantine), Consensus solver signature, FLP impossibility imported as a locale axiom.   |
+| `Events.thy`               | Event datatype, per-process and global histories, program-order, message-order, happened-before relation, `hb_eval`. |
+| `CD.thy`                   | `valid(F)`, false positives/negatives, adversary model, CD-solver signature, `produces_valid_F`, `CD_solvable`.      |
+| `BlackBox.thy`             | `w_value`, BB output record, `solves_BlackBox`, `BlackBox_solvable`.                                                 |
+| `Reductions.thy`           | The two reductions of §4.2.  Constructive proofs in declarative Isar.                                                |
+| `Impossibility.thy`        | Theorems 3, 4, 5 plus a summary corollary.                                                                           |
+| `Foundation_Vacuity.thy`   | Diagnostic: machine-checked counter-example showing `flp_consensus_impossibility` is unsatisfiable at this abstraction. |
 
 ## Proof strategy
 
@@ -124,16 +125,37 @@ plain HOL definitions:
 1. **`byzantineSystem.flp_consensus_impossibility`** *(in
    `ByzantineSystem.thy`)*.
    Statement: `byzantine ≠ {} ⟹ ¬ (∃ alg. solves_Consensus correct alg)`.
-   Faithfulness: this is exactly the FLP impossibility result, imported
-   from the AFP entry.  Why an axiom?  Our `'p consensus_alg` is a
-   function-level abstraction; the AFP entry's `Consensus_solvability`
-   predicate is record-shaped.  To formally discharge our axiom one
-   exhibits, inside an interpretation of `byzantineSystem`, a translation
-   of any putative `'p consensus_alg` into the AFP entry's
-   distributed-algorithm representation and concludes by the FLP theorem.
-   The translation is the *Byzantine subsumes crash* embedding: a
-   Byzantine process can halt after any chosen prefix, which exactly
-   simulates a crash failure.  An interpretation outline:
+   Faithfulness: this is intended to mirror the FLP impossibility
+   result, imported through the *Byzantine subsumes crash* embedding.
+
+   > **Important caveat (discovered during build verification).**  At
+   > the present abstraction level the axiom is *not* faithful to FLP:
+   > it is logically inconsistent with `byzantine ≠ {}` in HOL.  The
+   > theory `Foundation_Vacuity.thy` exhibits the witness
+   >
+   > ```isabelle
+   > simple_alg C V p \<equiv> (\<exists>q \<in> C. V q)
+   > ```
+   >
+   > which satisfies `solves_Consensus C (simple_alg C)` purely as an
+   > HOL function — no distributed-computation constraint is in scope
+   > for `solves_Consensus` to fail on.  Hence `\<exists>alg. solves_Consensus
+   > correct alg` is provably True, so the locale axiom collapses to
+   > `byzantine = {}`, and the impossibility theorems in
+   > `Impossibility.thy` are vacuous in exactly the regime
+   > (`byzantine \<noteq> {}`) the paper is about.
+   >
+   > The structural fix is to strengthen `solves_Consensus` so it
+   > demands realisability by an asynchronous distributed protocol —
+   > e.g.\ by re-stating the predicate as an existential over
+   > `flpSystem` instances of the AFP entry, instead of over arbitrary
+   > HOL functions.  Once `solves_Consensus` is strong enough that
+   > FLP's `ConsensusFails` actually bites on it, the discharge
+   > sketched in the original interpretation outline below becomes
+   > available.
+
+   Intended interpretation outline (left here so it does not get lost
+   when the predicate is strengthened):
 
    ```isabelle
    interpretation our_sys: byzantineSystem procs correct byzantine
@@ -144,9 +166,6 @@ plain HOL definitions:
         invoke AFP entry's FLP theorem⟩
    qed
    ```
-
-   We deliberately keep this step outside the session to insulate
-   downstream proofs from AFP API changes.
 
 2. **`byzantineSystem_with_identification.cd_can_identify_correct`** *(in
    `Reductions.thy`)*.

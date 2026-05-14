@@ -291,11 +291,22 @@ Two named assumptions are introduced beyond plain HOL:
 
 1. `byzantineSystem.flp_consensus_impossibility` — the FLP
    impossibility transferred from the AFP `FLP` entry through the
-   "Byzantine subsumes crash" embedding.  Not an axiom in the
-   mathematical sense (it is a consequence of FLP); it is an axiom
-   *in this session* because we have abstracted away from the AFP
-   entry's record-shaped locale parameters.  Discharged at
-   interpretation time.
+   "Byzantine subsumes crash" embedding.  **Caveat surfaced after
+   build verification:** at the present abstraction level this axiom
+   is not just hard to discharge against AFP — it is logically
+   *inconsistent* with `byzantine ≠ {}` in HOL.  The diagnostic
+   theory `Foundation_Vacuity.thy` exhibits a pure-HOL function
+   `simple_alg C V p \<equiv> \<exists>q\<in>C. V q` satisfying
+   `solves_Consensus C (simple_alg C)`, so `\<exists>alg. solves_Consensus
+   correct alg` is provably True, the axiom's right-hand side is
+   provably False, and the impossibility theorems are vacuous in
+   exactly the case the paper is about.  Fixing this requires
+   strengthening `solves_Consensus` so it demands realisability by an
+   asynchronous distributed protocol (e.g.\ by quantifying over
+   `flpSystem` instances of the AFP entry) — at which point the FLP
+   discharge becomes mechanisable but the rest of the development
+   (CD, BlackBox, Reductions) must be re-checked against the new
+   predicate.  Recorded as a load-bearing open item; see `README.md`.
 2. `byzantineSystem_with_identification.cd_can_identify_correct` —
    the positive form of the paper's meta-level argument that any CD
    solver internally identifies the correct set.  This is the
