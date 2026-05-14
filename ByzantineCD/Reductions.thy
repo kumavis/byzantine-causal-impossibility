@@ -3,21 +3,62 @@
   Author:  Formalization of Misra & Kshemkalyani, "Byzantine-tolerant
            detection of causality" (Parallel Computing 124, 2025).
 
-  The two reductions of \S4.2 of the paper:
+  The two reductions of Section 4.2 of the paper:
 
-    (R1)  consensus_reduces_to_blackbox: a BlackBox solver yields a
-          Consensus solver.  Constructive: p_i broadcasts w, all output
-          the w broadcast by p_{min(L)}.  Proved here mechanically.
+    (R1)  consensus_reduces_to_blackbox:
+              a BlackBox solver yields a Consensus solver.
+          Paper, Section 4.2: "To solve Consensus(V) at p_i, invoke
+            Black_Box(V, E, F, e*_i) locally ... Each correct process
+            computes min(L) from the locally returned list L and outputs
+            as its consensus value the broadcast value that it receives
+            from p_min(L) and terminates.  The conditions of Consensus
+            -- Agreement, Validity, and Termination -- can be seen to
+            be satisfied.  So Consensus \<preceq> Black_Box."
+          We make this fully constructive and prove it mechanically.
 
-    (R2)  blackbox_reduces_to_cd: a CD solver yields a BlackBox solver.
-          Meta-level in the paper ("solving CD requires identifying all
-          Byzantine processes").  We capture the paper's meta-level step
-          as the named locale assumption cd_can_identify_correct in
-          byzantineSystem_with_identification.  The reduction proper is
-          then constructive and proved here.
+    (R2)  blackbox_reduces_to_cd:
+              a CD solver yields a BlackBox solver.
+          Paper, Section 4.2: "If there were an algorithm to make F
+            match E, it requires identifying whether each of the
+            processes that input their execution histories is correct
+            or Byzantine, and tracing and dealing with/resolving the
+            impact of contamination via message passing by the
+            Byzantine processes from and through those Byzantine
+            processes on the execution histories of processes at other
+            processes.  Thus, Black_Box \<preceq> CD."
+          The paper's argument is meta-level (no syntactic construction
+          of the BB solver from CD is given).  We capture the
+          meta-level step as a named locale assumption
+          (cd_can_identify_correct in byzantineSystem_with_identification)
+          and discharge the reduction proper as a constructive proof
+          from that assumption.
 
-  The composition Consensus \<preceq> BlackBox \<preceq> CD then yields the headline
-  impossibility theorem in Impossibility.thy.
+  Composition Consensus \<preceq> BlackBox \<preceq> CD is then used in
+  Impossibility.thy together with the proven FLP impossibility
+  (FLP_Consensus.thy) to derive Theorems 3, 4, 5.
+
+  Key deviations from the paper:
+
+    1. R1's "min(L)" is replaced by a hard-wired correct process
+       p_star, threaded as a parameter of consensus_from_bb.  This is
+       semantically equivalent given that bb_L = correct (one of BB's
+       output requirements) -- min(L) and any fixed p_star \<in> L produce
+       the same value because every correct process invoking BB gets
+       the same bb_w.  We do not need to actually compute the minimum
+       in our abstraction.
+
+    2. The paper's BB invocation runs at every correct p_i; our
+       consensus_from_bb is structurally constant in i (the BB output
+       is read once at p_star).  This is correct because, again,
+       bb_L = correct guarantees a single common reference point that
+       every correct process would resolve to.
+
+    3. R1 uses the "trivial" admissible adversary -- a single internal
+       event Internal p_star 1 at a chosen correct process -- as the
+       canonical context in which BB's correctness condition is
+       instantiated.  The paper does not need such a gadget because
+       it works at the operational level; at our function-level
+       abstraction we need an actual admissible adversary to feed BB.
 *)
 
 theory Reductions
@@ -26,10 +67,19 @@ begin
 
 section \<open>The trivial-execution gadget\<close>
 
-text \<open>To invoke the universal quantifier in @{const solves_BlackBox} and
-@{const produces_valid_F} we need at least one admissible adversary.  The
-following gadget supplies one: a singleton history at a designated correct
-process, exposing one internal event.\<close>
+text \<open>To invoke the universal quantifier in @{const solves_BlackBox}
+and @{const produces_valid_F} (the validity-condition predicates over
+all admissible adversaries) we need at least one concrete admissible
+adversary to instantiate them at.  This gadget supplies the simplest
+such adversary: a one-event history at a designated correct process
+\<open>p_star\<close>, with that single event playing the role of the target
+\<open>e_star\<close>.
+
+This is a mechanisation artefact, not a step of the paper.  Existing
+distributed-algorithm literature usually formulates BB as ``runs
+correctly on the actual execution''; we need an ``actual'' execution
+the universal quantifier can range over, and the trivial one is
+sufficient for Validity.\<close>
 
 definition trivial_history :: "'p \<Rightarrow> 'p history" where
   "trivial_history p_star \<equiv>
@@ -114,19 +164,25 @@ qed
 
 section \<open>Reduction R1: Consensus \<preceq> BlackBox\<close>
 
-text \<open>The paper's construction (\S4.2):
+text \<open>Paper, Section 4.2 (proof of Theorem 3, step 2):
 \begin{quote}
-   To solve Consensus(V) at $p_i$, invoke Black\_Box(V, E, F, $e_i^*$)
-   locally\dots\ Each correct process computes $\min(L)$ from the locally
-   returned list $L$ and outputs as its consensus value the broadcast
-   value that it receives from $p_{\min(L)}$ and terminates.
+``Now we give the reduction from Consensus to Black\_Box.  To solve
+Consensus(\<open>V\<close>) at (a correct process) \<open>p_i\<close>, we invoke
+Black\_Box(\<open>V, E, F, e_i^*\<close>) locally (and likewise to solve
+Consensus(\<open>V\<close>) at (each process) \<open>p_j\<close>, invoke
+Black\_Box(\<open>V, E, F, e_j^*\<close>) at each \<open>p_j\<close>).  Each correct process
+computes \<open>min(L)\<close> from the locally returned list \<open>L\<close> and outputs
+as its consensus value the broadcast value that it receives from
+\<open>p_min(L)\<close> and terminates.  The conditions of Consensus -- Agreement,
+Validity, and Termination -- can be seen to be satisfied.  So
+Consensus $\preceq$ Black\_Box.''
 \end{quote}
 
-In our function-level abstraction the ``broadcast'' is realised by reading
-@{term p_star}'s @{term bb_w} field directly; correctness of Black\_Box
-guarantees @{term "bb_L = C"} so the $\min(L)$ is determined and stable
-across correct processes.  We thread @{term p_star} as a parameter of the
-constructor for clarity.\<close>
+\textit{Deviation:} we do not compute \<open>min(L)\<close>.  Since BB's
+correctness condition guarantees \<open>bb_L = correct\<close> -- the set is the
+same at every correct process -- every correct process resolves
+\<open>p_min(L)\<close> to the same value, so any fixed correct \<open>p_star\<close> serves
+in place of \<open>min(L)\<close>.  We thread \<open>p_star\<close> as a constructor parameter.\<close>
 
 definition consensus_from_bb ::
   "'p set \<Rightarrow> 'p \<Rightarrow> 'p bb_solver \<Rightarrow> 'p consensus_alg" where
@@ -138,7 +194,15 @@ begin
 
 subsection \<open>Agreement\<close>
 
-text \<open>The constructor is constant in @{term i}; Agreement is immediate.\<close>
+text \<open>Paper's first Consensus property (Section 4.2):
+\begin{quote}
+``Agreement: All non-faulty processes must agree on the same single
+value.''
+\end{quote>
+
+In our construction every correct process reads the same
+\<open>bb_w (bb_alg \<dots>)\<close> value (\<open>consensus_from_bb\<close> ignores its second
+argument).  Agreement is immediate from this constancy.\<close>
 
 lemma consensus_from_bb_agreement:
   fixes V :: "'p \<Rightarrow> bool"
@@ -153,8 +217,18 @@ qed
 
 subsection \<open>Validity\<close>
 
-text \<open>Validity is obtained by instantiating BB-correctness at the trivial
-adversary and at the user-supplied @{term V}.\<close>
+text \<open>Paper's second Consensus property (Section 4.2):
+\begin{quote}
+``Validity: If all non-faulty processes have the same initial value,
+then the agreed-on value by all the non-faulty processes must be
+that same value.''
+\end{quote>
+
+We get Validity by instantiating \<open>solves_BlackBox\<close> at the trivial
+adversary and reading off the uniform-case branches of \<open>w_value\<close>:
+if all correct processes have \<open>V[p] = True\<close>, the BB output is the
+\<open>w_value_uniform_true\<close> branch, which is \<open>True\<close>; similarly for
+\<open>False\<close>.\<close>
 
 lemma bb_w_at_trivial:
   assumes bb:       "solves_BlackBox procs correct bb_alg"
@@ -230,9 +304,21 @@ qed
 
 subsection \<open>Termination is implicit in totality\<close>
 
-text \<open>Our @{typ "'p consensus_alg"} is a total function, so every correct
-process \emph{always} returns a decision and the Termination clause of
-\S4.2 holds automatically.\<close>
+text \<open>Paper's third Consensus property (Section 4.2):
+\begin{quote}
+``Termination: Each non-faulty process must eventually decide on a
+value.''
+\end{quote>
+
+\textit{Deviation (a load-bearing one):} our @{typ "'p consensus_alg"}
+is a total HOL function, so every correct process \emph{always}
+returns a decision and Termination holds trivially.  This trivialisation
+of Termination is exactly what makes the abstract \<open>solves_Consensus\<close>
+predicate too weak to express FLP -- see @{theory_text
+\<open>Foundation_Vacuity.thy\<close>} -- and is the reason the impossibility
+chain in @{theory_text \<open>Impossibility.thy\<close>} goes through the
+FLP-style \<open>flp_consensus_solvable\<close> predicate of \<open>FLP_Consensus.thy\<close>
+rather than directly through \<open>solves_Consensus\<close>.\<close>
 
 subsection \<open>Composition: the headline reduction\<close>
 
@@ -266,29 +352,37 @@ end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
 section \<open>Reduction R2: BlackBox \<preceq> CD\<close>
 
-text \<open>The paper's argument (\S4.2):
+text \<open>Paper, Section 4.2 (proof of Theorem 3, step 1):
 \begin{quote}
-  If there were an algorithm to make $F$ match $E$, it requires identifying
-  whether each of the processes that input their execution histories is
-  correct or Byzantine\dots\ Thus, to solve CD, it is necessary to identify
-  Byzantine processes, their actual execution histories, and causal chains
-  from and through them.  So we have Black\_Box $\preceq$ CD.
-\end{quote}
+``If there were an algorithm to make \<open>F\<close> match \<open>E\<close>, it requires
+identifying whether each of the processes that input their execution
+histories is correct or Byzantine, and tracing and dealing with /
+resolving the impact of contamination via message passing by the
+Byzantine processes from and through those Byzantine processes on the
+execution histories of processes at other processes.  Thus,
+Black\_Box $\preceq$ CD.''
+\end{quote>
 
-The paper does not exhibit a syntactic construction of a Black\_Box solver
-from a CD solver; the argument is meta-level.  We capture this faithfully
-as a single, named locale assumption
-(\<open>byzantineSystem_with_identification.cd_can_identify_correct\<close>) and
-discharge the reduction from it constructively.
+\textit{Deviation -- meta-level step.}  The paper does not exhibit a
+syntactic construction of a Black\_Box solver from a CD solver; the
+argument is meta-level (``it requires identifying \dots'').  We
+capture this faithfully as a single named locale assumption
+\<open>cd_can_identify_correct\<close> in the sub-locale
+\<open>byzantineSystem_with_identification\<close>:
 
-\medskip
-\textbf{Faithfulness statement.}  The assumption says: \emph{If there is an
-algorithm that produces a valid F (Definition~5), then there is an algorithm
-that produces the same valid F, returns the decision True, and \emph{also}
-returns the set of correct processes.}  The paper's argument is the
-contrapositive: producing a valid F is impossible without internally
-identifying the correct set.  Our locale assumption is the positive form
-of that meta-level claim.\<close>
+\begin{quote}
+``If there is an algorithm \<open>cd_alg\<close> that produces a valid \<open>F\<close>,
+then there is an algorithm \<open>cd_alg'\<close> that (i) produces the same valid
+\<open>F\<close>, (ii) returns the decision \<open>True\<close>, and (iii) also returns the
+set of correct processes.''
+\end{quote>
+
+This is the positive form of the paper's contrapositive (``producing
+valid \<open>F\<close> is impossible without internally identifying the correct
+set'').  From this assumption the rest of R2 is fully constructive:
+the BB solver projects the augmented CD solver's @{term L} field into
+\<open>bb_L\<close>, its @{term F} field into \<open>bb_F\<close>, and applies the piecewise
+definition of @{const w_value} to obtain \<open>bb_w\<close>.\<close>
 
 context byzantineSystem
 begin
@@ -296,11 +390,15 @@ begin
 type_synonym 'q cd_solver_with_L =
   "'q \<Rightarrow> 'q event \<Rightarrow> 'q history \<times> bool \<times> 'q set"
 
-text \<open>The augmented predicate.  We insist on the three properties Misra--
-Kshemkalyani actually need from the meta-level step: (i) the collected F is
-valid, (ii) the algorithm's claim @{term b} is @{term True}, matching
-Definition~5's ``returning 1 indicates that the problem has been solved
-correctly'', and (iii) @{term "L = correct"}.\<close>
+text \<open>The augmented predicate insists on the three properties
+Misra--Kshemkalyani actually need from the meta-level step:
+\begin{enumerate}
+  \item the collected \<open>F\<close> is valid in the sense of Definition 5;
+  \item the algorithm's claim \<open>b\<close> is \<open>True\<close>, matching Definition 5's
+        ``returning 1 indicates that the problem has been solved
+        correctly'';
+  \item the reported list \<open>L\<close> equals the correct set.
+\end{enumerate}\<close>
 
 definition produces_valid_F_with_L ::
   "'p set \<Rightarrow> 'p cd_solver_with_L \<Rightarrow> bool" where
@@ -324,10 +422,21 @@ begin
 
 subsection \<open>Constructive part: BB from an augmented CD solver\<close>
 
-text \<open>Given an augmented CD solver, build a Black\_Box solver by projection.
-The @{term bb_F} field is the CD solver's @{term F'}; @{term bb_L} is its
-@{term L}; @{term bb_w} is the paper's piecewise @{const w_value} using the
-augmented solver's reported @{term L}.\<close>
+text \<open>Given an augmented CD solver (one that, by
+@{thm cd_can_identify_correct}, also reports the correct set), we
+build a Black\_Box solver by simple projection:
+\begin{itemize}
+  \item \<open>bb_F\<close> := the augmented CD solver's collected \<open>F'\<close>;
+  \item \<open>bb_L\<close> := the augmented CD solver's reported \<open>L\<close>
+        (which equals \<open>correct\<close> by assumption);
+  \item \<open>bb_w\<close> := the paper's piecewise \<open>w_value\<close>, computed against
+        \<open>L\<close> and the CD solver's boolean.
+\end{itemize>
+
+This matches the paper's reduction in Section 4.2: ``Solving
+Black\_Box at \<open>p_i\<close> requires identifying the set of correct
+processes and solving CD.''  The augmented CD solver does both; the
+projection just exposes its outputs in the BB record shape.\<close>
 
 definition bb_from_cd_with_L ::
   "'p cd_solver_with_L \<Rightarrow> 'p bb_solver" where

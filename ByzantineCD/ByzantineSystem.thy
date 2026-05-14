@@ -3,19 +3,36 @@
   Author:  Formalization of Misra & Kshemkalyani, "Byzantine-tolerant
            detection of causality" (Parallel Computing 124, 2025).
 
-  The Byzantine system locale.  We extend the asynchronous-system layer of the
-  AFP entry FLP (Bisping, Brodmann, Jungnickel, Rickmann, Seidler, Stueber,
-  Wilhelm-Weidner, Peters, Nestmann, 2025) with a partition of processes into
-  correct and Byzantine.  Byzantine processes are under-specified: their local
-  behaviour is arbitrary.
+  Paper coverage:
+    - Section 2 ("System model"): the partition of processes into
+      correct and Byzantine.
+    - Section 4.2: the abstract Consensus problem (used in the
+      reduction Consensus \<preceq> BlackBox).
 
   This theory exposes:
-   * the process partition itself, with sanity lemmas;
-   * an abstract Consensus solver-type and a solvesConsensus predicate;
-   * the FLP impossibility for our Consensus signature, as a locale axiom
-     that is intended to be discharged by lifting the AFP entry's
-     impossibility theorem through the standard "Byzantine subsumes crash"
-     embedding (sketched in the README).
+    * the process partition with sanity lemmas;
+    * an abstract Consensus solver-type and the solves_Consensus
+      predicate;
+    * the byzantineSystem locale (a thin extension of
+      process_partition; the formerly-bundled FLP-impossibility
+      axiom was retired -- see Foundation_Vacuity.thy and
+      FLP_Consensus.thy).
+
+  Deviations from the paper:
+
+    1. The paper writes "G = (P, C)" with C the set of FIFO links.
+       We only track P (here split into "procs"); the FIFO
+       constraint is not enforced because none of T1-T5 need it.
+
+    2. The paper does not name "correct" / "Byzantine" sets in the
+       formal model; it refers to "a Byzantine process p_b" in
+       prose.  We make the partition explicit as locale parameters
+       so theorems can quantify "for every admissible adversary"
+       with respect to a chosen partition.
+
+    3. We do not formalise digital signatures / cryptography (paper
+       Section 4.4); that is the difference between Theorems 3-5
+       (no crypto) and 9-14 (with crypto).
 *)
 
 theory ByzantineSystem
@@ -27,9 +44,19 @@ begin
 
 section \<open>Process identifiers, correct vs. Byzantine partition\<close>
 
-text \<open>We work with an arbitrary process-identifier type @{typ 'p} and
-require only that the set of processes be finite, non-empty, and
-partitioned into a set of correct and a set of Byzantine processes.\<close>
+text \<open>Paper, Section 2:
+\begin{quote}
+``The distributed system is modeled as an undirected graph
+\<open>G = (P, C)\<close>.  Here \<open>P\<close> is the set of processes communicating
+asynchronously in the distributed system.  Let \<open>|P| = n\<close>.''
+\end{quote>
+
+The paper does not formalise the correct/Byzantine partition in
+the model itself; it talks about ``a correct process \<open>p_c\<close>'' and
+``a Byzantine process \<open>p_b\<close>'' in prose.  We make the partition
+explicit: \<open>procs\<close> is the set \<open>P\<close>, \<open>correct\<close> is the set of
+non-Byzantine processes, \<open>byzantine\<close> is the rest.  Finiteness and
+non-emptiness of \<open>P\<close> are taken from the paper's tacit assumptions.\<close>
 
 locale process_partition =
   fixes
@@ -65,22 +92,41 @@ end \<comment> \<open>context @{locale process_partition}\<close>
 
 section \<open>Abstract Consensus solver signature\<close>
 
-text \<open>We model a deterministic distributed Consensus algorithm at the level
-of its observable input/output behaviour.  Each correct process @{term p}
-starts with an initial boolean value @{term "V p"}; the algorithm produces
-a decision value for each process.  This abstraction does not in itself
-constrain communication patterns or schedules; the FLP impossibility we
-import below applies to algorithms in the asynchronous message-passing
-model and is faithful to the AFP entry's distributed semantics.\<close>
+text \<open>Paper, Section 4.2:
+\begin{quote}
+``In the Consensus problem, each process has an initial value and
+all correct processes must agree on a single value.  The solution
+needs to satisfy the following three conditions.
+
+\begin{itemize}
+  \item Agreement: All non-faulty processes must agree on the same
+        single value.
+  \item Validity: If all non-faulty processes have the same initial
+        value, then the agreed-on value by all the non-faulty
+        processes must be that same value.
+  \item Termination: Each non-faulty process must eventually decide
+        on a value.
+\end{itemize}''
+\end{quote>
+
+We model a Consensus algorithm at the level of its observable
+input/output behaviour: it takes an initial-value vector \<open>V\<close>
+(boolean per process) and produces a decision (boolean per process).
+
+\textit{Major deviation (load-bearing).}  At this level of
+abstraction the predicate \<open>solves_Consensus\<close> below only enforces
+Agreement and Validity, with Termination trivially holding by
+totality of the function type.  The FLP impossibility result relies
+crucially on Termination-under-failure in an asynchronous distributed
+\emph{protocol}, which a pure HOL function does not model; this
+makes \<open>solves_Consensus\<close> too weak for FLP to bite on, and is the
+reason the impossibility chain in @{theory_text \<open>Impossibility.thy\<close>}
+routes through the FLP-style predicate in
+@{theory_text \<open>FLP_Consensus.thy\<close>} instead.  See
+\<open>Foundation_Vacuity.thy\<close> for a machine-checked counter-example to
+the naive ``no abstract consensus solver exists'' claim.\<close>
 
 type_synonym 'p consensus_alg = "('p \<Rightarrow> bool) \<Rightarrow> 'p \<Rightarrow> bool"
-
-text \<open>Three properties demanded of a Consensus algorithm:
-  Agreement: all correct processes decide the same value.
-  Validity:  if every correct process starts with @{term v}, they all decide @{term v}.
-  Termination: each correct process decides.  At our abstraction level a
-  decision is always returned, so Termination is implicit in the totality
-  of @{typ "'p consensus_alg"}.\<close>
 
 definition consensus_agreement ::
   "'p set \<Rightarrow> 'p consensus_alg \<Rightarrow> ('p \<Rightarrow> bool) \<Rightarrow> bool" where
@@ -100,17 +146,22 @@ definition solves_Consensus ::
 section \<open>The Byzantine system locale\<close>
 
 text \<open>We bundle the process partition into a locale named
-\<open>byzantineSystem\<close>.  The locale has no extra assumptions beyond those of
-@{locale process_partition}: it merely fixes the partition
-@{term "procs = correct \<union> byzantine"}.  Previous versions added a
-locale axiom \<open>flp_consensus_impossibility\<close> claiming the FLP impossibility
-directly on @{const solves_Consensus}, but that axiom was unsatisfiable
-in HOL (see \<open>Foundation_Vacuity.thy\<close> for a machine-checked
-counter-example).  The impossibility is now imported from the AFP entry's
+\<open>byzantineSystem\<close>.  The locale has no extra assumptions beyond
+those of @{locale process_partition}: it merely fixes the partition
+\<open>procs = correct \<union> byzantine\<close>.
+
+\textit{Historical note.}  Earlier versions of this development
+added a locale axiom \<open>flp_consensus_impossibility\<close> that claimed the
+FLP impossibility directly on @{const solves_Consensus}, but that
+axiom turned out to be unsatisfiable in HOL (the pure-HOL function
+\<open>simple_alg C V p \<equiv> \<exists>q\<in>C. V q\<close> satisfies @{const solves_Consensus},
+so denying it collapses to \<open>byzantine = {}\<close>).  See
+\<open>Foundation_Vacuity.thy\<close> for the machine-checked counter-example.
+The impossibility is now imported from the AFP entry's
 \<open>ConsensusFails\<close> theorem via the FLP-style predicate in
 \<open>FLP_Consensus.thy\<close>, and the chain from CD-solvability to a
-contradiction is closed in \<open>Impossibility.thy\<close> through a separate
-meta-level bridge assumption.\<close>
+contradiction is closed in \<open>Impossibility.thy\<close> through the
+\<open>bb_realizes_flp_consensus\<close> bridge.\<close>
 
 locale byzantineSystem = process_partition procs correct byzantine
   for procs correct byzantine :: "'p set"

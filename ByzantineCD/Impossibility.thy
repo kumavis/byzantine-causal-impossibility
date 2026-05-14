@@ -42,23 +42,49 @@ begin
 
 section \<open>Theorem 3: CD impossible under unicast\<close>
 
-text \<open>Paper:
+text \<open>Paper, Theorem 3 (Section 4.2):
 \begin{quote}
-   It is impossible to solve causality determination (Definition 5) as
-   specified by CD($E, F, e_i^*$) in an asynchronous unicast-based
-   message-passing system with one or more Byzantine processes.
-\end{quote}
+``It is impossible to solve causality determination (Definition 5)
+as specified by CD(\<open>E, F, e_i^*\<close>) in an asynchronous unicast-based
+message passing system with one or more Byzantine processes.''
+\end{quote>
 
-Strategy: compose
-\<open>blackbox_reduces_to_cd\<close> with the BlackBox-to-FLP bridge predicate
-@{const bb_realizes_flp_consensus} and conclude by
-@{thm flp_consensus_unsolvable}.\<close>
+The paper's proof composes the two reductions of Section 4.2 with
+FLP's impossibility:
+\begin{quote}
+``Transitivity of reductions implies that if the CD problem is
+solvable, then Consensus is also solvable.  However, that contradicts
+the FLP impossibility result [35] when applied to a Byzantine system,
+hence CD cannot be solvable.''
+\end{quote>
+
+\textit{Deviation -- non-vacuous chain.}  At our abstraction level the
+pure-HOL @{const solves_Consensus} predicate is too weak to express
+FLP (Foundation\_Vacuity.thy makes this machine-checked).  We
+therefore route the chain through the FLP-style
+@{const flp_consensus_solvable} predicate of FLP\_Consensus.thy
+instead, using the meta-level bridge @{const bb_realizes_flp_consensus}
+to cross from BB-solvability to ``some asynchronous distributed
+protocol flp-solves consensus''.  The chain is then:
+\begin{quote}
+   \<open>CD_solvable\<close>
+      \<open>\<longrightarrow>\<close> \<open>BlackBox_solvable\<close> (by R2 +
+                                 \<open>cd_can_identify_correct\<close>)
+      \<open>\<longrightarrow>\<close> \<open>\<exists>\<close> FLP-style consensus solver (by the bridge)
+      \<open>\<longrightarrow>\<close> @{term False} (by \<open>flp_consensus_unsolvable\<close>, proven
+                                 against the AFP entry's
+                                 \<open>ConsensusFails\<close>).
+\end{quote>
+
+The two type witnesses @{typ 's} (state) and @{typ 'v} (message-value)
+are parameters of the bridge predicate.\<close>
 
 context byzantineSystem_with_identification
 begin
 
 theorem CD_impossible_unicast:
-  assumes cor_ne: "correct \<noteq> {}"
+  assumes byz_ne: "byzantine \<noteq> {}"
+      and cor_ne: "correct \<noteq> {}"
       and bridge: "bb_realizes_flp_consensus
                      procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Unicast correct"
@@ -79,27 +105,34 @@ qed
 
 section \<open>Theorem 4: CD impossible under broadcast\<close>
 
-text \<open>Paper:
+text \<open>Paper, Theorem 4 (Section 4.2):
 \begin{quote}
-   It is impossible to solve causality determination (Definition 5) as
-   specified by CD($E, F, e_i^*$) in an asynchronous broadcast-based
-   message-passing system with one or more Byzantine processes.
-\end{quote}
+``It is impossible to solve causality determination (Definition 5) as
+specified by CD(\<open>E, F, e_i^*\<close>) in an asynchronous broadcast-based
+message passing system with one or more Byzantine processes.''
+\end{quote>
 
 The paper's proof of Theorem 4 ``has the overall structure along the
-lines of that for Theorem 3''.  The differences are:
+lines of that for Theorem 3''.  Its two differences:
 \begin{enumerate}
-  \item False positives can now be prevented by running broadcasts over a
-        Byzantine Reliable Broadcast (BRB) layer beneath.
-  \item False negatives still cannot be prevented (Theorem 1 carries over).
-\end{enumerate}
-Both are within-mode strengthenings; the reduction structure is identical.
-Since our abstract Black\_Box-reduces-to-CD argument does not depend on the
-mode (it relies only on @{thm cd_can_identify_correct}), Theorem 4 is the
-same theorem as Theorem 3 specialised to the broadcast mode.\<close>
+  \item ``By doing broadcasts using the Byzantine Reliable Broadcast
+        (BRB) [\dots] layer, false positives can be prevented by
+        ensuring no fake events/causal dependencies are added to
+        \<open>F\<close>.''
+  \item ``False negatives still cannot be prevented (Theorem 1
+        carries over).''
+\end{enumerate>
+
+\textit{Deviation:} we do not formalise BRB.  We use the same
+chain as Theorem 3, exploiting the mode-agnosticism of @{const
+CD_solvable} -- the reduction-to-FLP works mode-independently.
+A richer development that adds BRB would refine our \<open>Broadcast\<close>
+predicate and re-state Theorem 4 with BRB as a hypothesis, but the
+\emph{conclusion} -- ``CD is unsolvable'' -- is identical.\<close>
 
 theorem CD_impossible_broadcast:
-  assumes cor_ne: "correct \<noteq> {}"
+  assumes byz_ne: "byzantine \<noteq> {}"
+      and cor_ne: "correct \<noteq> {}"
       and bridge: "bb_realizes_flp_consensus
                      procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Broadcast correct"
@@ -114,28 +147,32 @@ qed
 
 section \<open>Theorem 5: CD impossible under multicast\<close>
 
-text \<open>Paper:
+text \<open>Paper, Theorem 5 (Section 4.2):
 \begin{quote}
-   It is impossible to solve causality determination (Definition 5) as
-   specified by CD($E, F, e_i^*$) in an asynchronous multicast-based
-   message-passing system with one or more Byzantine processes.
+``It is impossible to solve causality determination (Definition 5) as
+specified by CD(\<open>E, F, e_i^*\<close>) in an asynchronous multicast-based
+message passing system with one or more Byzantine processes.
 
-   Proof. Unicast mode of communication is a special case of multicast
-   where each group is of size 1 (or 2 if the sender is included in the
-   multicast group).  Theorem 3 proved that causality determination in the
-   presence of even a single Byzantine process under unicast communication
-   is impossible to solve.  As the special case of group size 1 (or 2) is
-   not solvable, the general case of multicast is also not solvable.
-\end{quote}
+Proof.  Unicast mode of communication is a special case of multicast
+where each group is of size 1 (or 2 if the sender is included in the
+multicast group).  Theorem 3 proved that causality determination in
+the presence of even a single Byzantine process under unicast
+communication is impossible to solve.  As the special case of group
+size 1 (or 2) is not solvable, the general case of multicast is also
+not solvable.''
+\end{quote>
 
-In our abstraction the @{const CD_solvable} predicate does not actually
-depend on the mode tag (see comment in \<open>CD.thy\<close>); a multicast
+\textit{Faithfulness:} our \<open>CD_solvable\<close> predicate is mode-agnostic
+at the level of Definition 5 (see comment in \<open>CD.thy\<close>); a multicast
 algorithm could in particular be used as a unicast algorithm by
-specialising to \<open>|G| = 1\<close>.  We therefore reduce Theorem 5 to
-Theorem 3 explicitly.\<close>
+specialising to a group of size 1.  We reduce Theorem 5 to Theorem 3
+explicitly via the function-level argument: if some
+@{const produces_valid_F} algorithm exists for Multicast, the same
+algorithm witnesses \<open>CD_solvable Unicast\<close>.\<close>
 
 theorem CD_impossible_multicast:
-  assumes cor_ne: "correct \<noteq> {}"
+  assumes byz_ne: "byzantine \<noteq> {}"
+      and cor_ne: "correct \<noteq> {}"
       and bridge: "bb_realizes_flp_consensus
                      procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Multicast correct"
@@ -156,7 +193,8 @@ proof
   qed
 
   show False
-    using CD_impossible_unicast[OF cor_ne bridge] unicast_solv by contradiction
+    using CD_impossible_unicast[OF byz_ne cor_ne bridge] unicast_solv
+    by contradiction
 qed
 
 section \<open>Summary corollary\<close>
@@ -164,7 +202,8 @@ section \<open>Summary corollary\<close>
 text \<open>One statement, all three modes.\<close>
 
 theorem CD_impossible_all_modes:
-  assumes cor_ne: "correct \<noteq> {}"
+  assumes byz_ne: "byzantine \<noteq> {}"
+      and cor_ne: "correct \<noteq> {}"
       and bridge: "bb_realizes_flp_consensus
                      procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Unicast   correct"
@@ -172,11 +211,11 @@ theorem CD_impossible_all_modes:
     and "\<not> CD_solvable Multicast correct"
 proof -
   show "\<not> CD_solvable Unicast correct"
-    by (rule CD_impossible_unicast[OF cor_ne bridge])
+    by (rule CD_impossible_unicast[OF byz_ne cor_ne bridge])
   show "\<not> CD_solvable Broadcast correct"
-    by (rule CD_impossible_broadcast[OF cor_ne bridge])
+    by (rule CD_impossible_broadcast[OF byz_ne cor_ne bridge])
   show "\<not> CD_solvable Multicast correct"
-    by (rule CD_impossible_multicast[OF cor_ne bridge])
+    by (rule CD_impossible_multicast[OF byz_ne cor_ne bridge])
 qed
 
 end \<comment> \<open>context @{locale byzantineSystem_with_identification}\<close>
