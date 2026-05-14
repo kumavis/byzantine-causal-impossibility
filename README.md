@@ -90,6 +90,11 @@ B-happened-before relation):
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
 
+A pre-built copy of the session document is committed at
+[`dist/ByzantineCD.pdf`](dist/ByzantineCD.pdf) (47 pages, A4) for
+direct reading; regenerate it any time with
+`isabelle build -d $AFP -o document=pdf -D ByzantineCD`.
+
 See [`AFP_SUBMISSION.md`](AFP_SUBMISSION.md) at the repo root for
 notes on AFP submission preparation.
 
