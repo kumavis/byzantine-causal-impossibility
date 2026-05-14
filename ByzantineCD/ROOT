@@ -9,3 +9,4 @@ session ByzantineCD (AFP) = FLP +
     BlackBox
     Reductions
     Impossibility
+    Foundation_Vacuity
