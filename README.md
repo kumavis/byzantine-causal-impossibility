@@ -18,25 +18,32 @@ Wilhelm-Weidner, Peters, Nestmann, 2025-03).
 
 ## Status
 
-The session compiles in principle against **Isabelle 2025 + AFP 2025**;
-the network sandbox in which this code was produced has no access to
-`isabelle.in.tum.de` or `www.isa-afp.org`, so `isabelle build -D .` has
-**not** been run here.  Reproducing the build:
+The session compiles against **Isabelle 2025-2 + AFP snapshot
+`afp-2026-05-13`**.  Verified locally:
+
+```
+Running ByzantineCD ...
+ByzantineCD: theory ByzantineCD.ByzantineSystem 100% (0.102s ...)
+ByzantineCD: theory ByzantineCD.Events         100% (0.694s ...)
+ByzantineCD: theory ByzantineCD.CD             100% (0.338s ...)
+ByzantineCD: theory ByzantineCD.BlackBox       100% (0.169s ...)
+ByzantineCD: theory ByzantineCD.Reductions     100% (0.320s ...)
+ByzantineCD: theory ByzantineCD.Impossibility  100% (0.045s ...)
+Finished ByzantineCD (0:00:02 elapsed)
+```
+
+Reproducing:
 
 ```sh
 isabelle build -d $AFP -D ByzantineCD
 ```
 
 with `$AFP` pointing at a checkout of the Archive of Formal Proofs that
-includes the `FLP` entry.
-
-If the FLP entry's surface identifiers diverge from what this development
-assumes (we only need that `FLP.AsynchronousSystem`,
-`FLP.Execution`, `FLP.Consensus`, and `FLP.FLPTheorem` are loadable theory
-names), the simplest accommodation is to retarget the `imports` clause of
-`ByzantineSystem.thy` to whatever theory exports the impossibility — the
-rest of the development uses FLP only through the locale axiom
-`flp_consensus_impossibility` and is therefore robust to minor API drift.
+includes the `FLP` entry.  The development imports only
+`FLP.AsynchronousSystem`, `FLP.Execution`, and `FLP.FLPTheorem`; the
+Consensus problem is re-stated locally rather than imported, so the
+build is robust to AFP's `FLP` entry not exposing a `Consensus.thy`
+of its own.
 
 ## Scope
 

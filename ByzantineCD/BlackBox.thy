@@ -48,7 +48,26 @@ qed
 lemma w_value_mixed:
   assumes notF: "\<not> (\<forall>p \<in> C. \<not> V p)" and notT: "\<not> (\<forall>p \<in> C. V p)"
   shows "w_value C V E F e_star = valid E F e_star"
-  using assms unfolding w_value_def by simp
+proof -
+  have step1: "(if (\<forall>p \<in> C. \<not> V p) then False
+                else if (\<forall>p \<in> C. V p) then True
+                else valid E F e_star)
+               = (if (\<forall>p \<in> C. V p) then True else valid E F e_star)"
+    using notF by (rule if_not_P)
+  have step2: "(if (\<forall>p \<in> C. V p) then True else valid E F e_star)
+                 = valid E F e_star"
+    using notT by (rule if_not_P)
+  have "w_value C V E F e_star =
+          (if (\<forall>p \<in> C. \<not> V p) then False
+           else if (\<forall>p \<in> C. V p) then True
+           else valid E F e_star)"
+    by (simp add: w_value_def)
+  also have "\<dots> = (if (\<forall>p \<in> C. V p) then True else valid E F e_star)"
+    by (rule step1)
+  also have "\<dots> = valid E F e_star"
+    by (rule step2)
+  finally show ?thesis .
+qed
 
 section \<open>Black\_Box output\<close>
 

@@ -22,7 +22,6 @@ theory ByzantineSystem
   imports
     FLP.AsynchronousSystem
     FLP.Execution
-    FLP.Consensus
     FLP.FLPTheorem
 begin
 
@@ -107,7 +106,7 @@ fact, stated for our abstract Consensus signature.
 entry's theorem.  In the intended interpretation against the AFP entry, the
 axiom below is discharged as follows.  Take any putative @{term "alg ::
 'p consensus_alg"} that satisfies @{const solves_Consensus}.  Show that it
-also satisfies the FLP entry's @{const Consensus_solvability} predicate
+also satisfies the FLP entry's distributed-algorithm correctness predicate
 (under the embedding of the abstract signature into FLP's record-shaped
 distributed-system model: an asynchronous schedule and arbitrarily one
 failing process induces an input vector @{term V} and a decision per
@@ -140,7 +139,7 @@ Byzantine failures.  In our locale this is a one-line consequence of
 lemma byzantine_subsumes_crash:
   assumes "byzantine \<noteq> {}"
   shows "\<not> (\<exists>alg. solves_Consensus correct alg)"
-  using assms flp_consensus_impossibility .
+  by (rule flp_consensus_impossibility[OF assms])
 
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
