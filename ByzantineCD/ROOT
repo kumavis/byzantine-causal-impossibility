@@ -1,14 +1,29 @@
 chapter AFP
 
 session ByzantineCD (AFP) = FLP +
-  options [timeout = 600, document = false]
+  description \<open>
+    Mechanisation in Isabelle/HOL of the impossibility results of
+    Misra and Kshemkalyani, "Byzantine-tolerant detection of
+    causality: There is no holy grail" (Parallel Computing 124,
+    2025).  Builds on the AFP entry FLP for the underlying
+    asynchronous-system framework and the FLP impossibility
+    theorem (invoked, not re-proven).  Mechanises Theorems 1, 2
+    (Section 4.1: false negatives unavoidable; FN-or-FP unavoidable
+    for internal events) and Theorems 3, 4, 5 (Section 4.2: CD
+    unsolvable in unicast / broadcast / multicast in the presence
+    of one or more Byzantine processes).
+  \<close>
+  options [timeout = 600]
   theories
     ByzantineSystem
     Events
     CD
     BlackBox
     Reductions
-    Impossibility
     Theorems_1_2
-    Foundation_Vacuity
     FLP_Consensus
+    Impossibility
+    Foundation_Vacuity
+  document_files
+    "root.tex"
+    "root.bib"

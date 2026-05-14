@@ -87,6 +87,11 @@ B-happened-before relation):
 | `Theorems_1_2.thy`         | Theorems 1 and 2 (FN-unavoidable, FN-or-FP-unavoidable for internal events).  Constructive adversaries via fresh ids.|
 | `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`; BlackBox-to-FLP bridge predicate. |
 | `Foundation_Vacuity.thy`   | Regression diagnostic: retains the witness showing the abstract `solves_Consensus` predicate alone admits a trivial HOL solver. |
+| `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
+| `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
+
+See [`AFP_SUBMISSION.md`](AFP_SUBMISSION.md) at the repo root for
+notes on AFP submission preparation.
 
 ## Proof strategy
 
