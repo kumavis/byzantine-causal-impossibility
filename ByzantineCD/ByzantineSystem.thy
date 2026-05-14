@@ -99,48 +99,20 @@ definition solves_Consensus ::
 
 section \<open>The Byzantine system locale\<close>
 
-text \<open>We bundle the process partition together with the FLP impossibility
-fact, stated for our abstract Consensus signature.
-
-\emph{Faithfulness note.}  We do \emph{not} re-prove FLP.  We re-use the AFP
-entry's theorem.  In the intended interpretation against the AFP entry, the
-axiom below is discharged as follows.  Take any putative @{term "alg ::
-'p consensus_alg"} that satisfies @{const solves_Consensus}.  Show that it
-also satisfies the FLP entry's distributed-algorithm correctness predicate
-(under the embedding of the abstract signature into FLP's record-shaped
-distributed-system model: an asynchronous schedule and arbitrarily one
-failing process induces an input vector @{term V} and a decision per
-correct process).  Since Byzantine failures subsume crash failures (a
-Byzantine process can simulate a crash by halting after a chosen prefix),
-the FLP impossibility theorem yields a contradiction whenever
-@{term "byzantine \<noteq> {}"}.\<close>
+text \<open>We bundle the process partition into a locale named
+\<open>byzantineSystem\<close>.  The locale has no extra assumptions beyond those of
+@{locale process_partition}: it merely fixes the partition
+@{term "procs = correct \<union> byzantine"}.  Previous versions added a
+locale axiom \<open>flp_consensus_impossibility\<close> claiming the FLP impossibility
+directly on @{const solves_Consensus}, but that axiom was unsatisfiable
+in HOL (see \<open>Foundation_Vacuity.thy\<close> for a machine-checked
+counter-example).  The impossibility is now imported from the AFP entry's
+\<open>ConsensusFails\<close> theorem via the FLP-style predicate in
+\<open>FLP_Consensus.thy\<close>, and the chain from CD-solvability to a
+contradiction is closed in \<open>Impossibility.thy\<close> through a separate
+meta-level bridge assumption.\<close>
 
 locale byzantineSystem = process_partition procs correct byzantine
-  for procs correct byzantine :: "'p set" +
-  assumes
-    flp_consensus_impossibility:
-      "byzantine \<noteq> {} \<Longrightarrow> \<not> (\<exists>alg. solves_Consensus correct alg)"
-
-context byzantineSystem
-begin
-
-lemma no_consensus_solver:
-  assumes "byzantine \<noteq> {}"
-  shows "\<nexists>alg. solves_Consensus correct alg"
-  using assms flp_consensus_impossibility by blast
-
-text \<open>Sanity lemma: ``Byzantine subsumes crash''.  Any algorithm that
-solves Consensus tolerating Byzantine failures also solves Consensus
-tolerating crash failures; conversely, the impossibility of Consensus
-under crash failures (FLP) implies the impossibility of Consensus under
-Byzantine failures.  In our locale this is a one-line consequence of
-@{thm flp_consensus_impossibility}.\<close>
-
-lemma byzantine_subsumes_crash:
-  assumes "byzantine \<noteq> {}"
-  shows "\<not> (\<exists>alg. solves_Consensus correct alg)"
-  by (rule flp_consensus_impossibility[OF assms])
-
-end \<comment> \<open>context @{locale byzantineSystem}\<close>
+  for procs correct byzantine :: "'p set"
 
 end

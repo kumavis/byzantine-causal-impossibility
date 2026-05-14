@@ -13,13 +13,31 @@
     Theorem 5:  CD is impossible in async multicasts (trivial corollary
                 of Theorem 3: unicast is the special case |G| = 1).
 
-  All three follow from the composition  Consensus \<preceq> BlackBox \<preceq> CD
-  proved in Reductions.thy plus the FLP impossibility imported through
-  byzantineSystem.flp_consensus_impossibility.
+  Chain:
+
+    CD_solvable
+       |  R2 (blackbox_reduces_to_cd) -- in Reductions.thy, conditional
+       |     on locale assumption cd_can_identify_correct.
+       v
+    BlackBox_solvable
+       |  bb_realizes_flp_consensus -- in FLP_Consensus.thy, conditional
+       |     on the meta-level bridge predicate of the same name.
+       v
+    \<exists> flp_consensus_solvable instance
+       |  flp_consensus_unsolvable -- in FLP_Consensus.thy, *proven*
+       |     against the AFP entry's ConsensusFails theorem.
+       v
+    False
+
+  Theorems 3/4/5 below take both the cd_can_identify_correct
+  assumption (via the surrounding locale byzantineSystem_with_identification)
+  and the bb_realizes_flp_consensus assumption (as an explicit hypothesis
+  with two type-witness parameters).  The FLP impossibility itself is
+  no longer an axiom - it is proved in FLP_Consensus.thy.
 *)
 
 theory Impossibility
-  imports Reductions
+  imports Reductions FLP_Consensus
 begin
 
 section \<open>Theorem 3: CD impossible under unicast\<close>
@@ -31,18 +49,18 @@ text \<open>Paper:
    message-passing system with one or more Byzantine processes.
 \end{quote}
 
-Strategy: we have \<open>consensus_reduces_to_blackbox\<close> and
-\<open>blackbox_reduces_to_cd\<close>; their composition gives
-Consensus $\preceq$ BlackBox $\preceq$ CD.  The FLP impossibility, imported
-through \<open>byzantineSystem.flp_consensus_impossibility\<close>, then yields the
-contradiction whenever @{term "byzantine \<noteq> {}"}.\<close>
+Strategy: compose
+\<open>blackbox_reduces_to_cd\<close> with the BlackBox-to-FLP bridge predicate
+@{const bb_realizes_flp_consensus} and conclude by
+@{thm flp_consensus_unsolvable}.\<close>
 
 context byzantineSystem_with_identification
 begin
 
 theorem CD_impossible_unicast:
-  assumes byz_ne: "byzantine \<noteq> {}"
-      and cor_ne: "correct \<noteq> {}"
+  assumes cor_ne: "correct \<noteq> {}"
+      and bridge: "bb_realizes_flp_consensus
+                     procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Unicast correct"
 proof
   assume CD_solv: "CD_solvable Unicast correct"
@@ -51,16 +69,12 @@ proof
   have BB_solv: "BlackBox_solvable procs correct"
     by (rule CD_solvable_imp_BlackBox_solvable[OF CD_solv])
 
-  \<comment> \<open>Step 2: BlackBox solvable \<Longrightarrow> Consensus solvable.\<close>
-  have Cons_solv: "\<exists>alg. solves_Consensus correct alg"
-    by (rule BlackBox_solvable_imp_Consensus_solvable[OF cor_ne BB_solv])
+  \<comment> \<open>Step 2: BlackBox solvable \<Longrightarrow> False, via the bridge and FLP.\<close>
+  have BB_unsolv:
+    "\<not> BlackBox_solvable procs correct"
+    by (rule BlackBox_unsolvable_via_bridge[OF bridge])
 
-  \<comment> \<open>Step 3: FLP applies (we are in @{locale byzantineSystem}, and
-      @{term "byzantine \<noteq> {}"}).\<close>
-  have Cons_unsolv: "\<not> (\<exists>alg. solves_Consensus correct alg)"
-    by (rule flp_consensus_impossibility[OF byz_ne])
-
-  from Cons_solv Cons_unsolv show False by contradiction
+  from BB_solv BB_unsolv show False by contradiction
 qed
 
 section \<open>Theorem 4: CD impossible under broadcast\<close>
@@ -82,22 +96,20 @@ lines of that for Theorem 3''.  The differences are:
 Both are within-mode strengthenings; the reduction structure is identical.
 Since our abstract Black\_Box-reduces-to-CD argument does not depend on the
 mode (it relies only on @{thm cd_can_identify_correct}), Theorem 4 is the
-same theorem as Theorem 3 specialised to the broadcast mode.  We record it
-explicitly for downstream reuse.\<close>
+same theorem as Theorem 3 specialised to the broadcast mode.\<close>
 
 theorem CD_impossible_broadcast:
-  assumes byz_ne: "byzantine \<noteq> {}"
-      and cor_ne: "correct \<noteq> {}"
+  assumes cor_ne: "correct \<noteq> {}"
+      and bridge: "bb_realizes_flp_consensus
+                     procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Broadcast correct"
 proof
   assume CD_solv: "CD_solvable Broadcast correct"
   have BB_solv: "BlackBox_solvable procs correct"
     by (rule CD_solvable_imp_BlackBox_solvable[OF CD_solv])
-  have Cons_solv: "\<exists>alg. solves_Consensus correct alg"
-    by (rule BlackBox_solvable_imp_Consensus_solvable[OF cor_ne BB_solv])
-  have Cons_unsolv: "\<not> (\<exists>alg. solves_Consensus correct alg)"
-    by (rule flp_consensus_impossibility[OF byz_ne])
-  from Cons_solv Cons_unsolv show False by contradiction
+  have BB_unsolv: "\<not> BlackBox_solvable procs correct"
+    by (rule BlackBox_unsolvable_via_bridge[OF bridge])
+  from BB_solv BB_unsolv show False by contradiction
 qed
 
 section \<open>Theorem 5: CD impossible under multicast\<close>
@@ -123,8 +135,9 @@ specialising to \<open>|G| = 1\<close>.  We therefore reduce Theorem 5 to
 Theorem 3 explicitly.\<close>
 
 theorem CD_impossible_multicast:
-  assumes byz_ne: "byzantine \<noteq> {}"
-      and cor_ne: "correct \<noteq> {}"
+  assumes cor_ne: "correct \<noteq> {}"
+      and bridge: "bb_realizes_flp_consensus
+                     procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Multicast correct"
 proof
   assume CD_solv: "CD_solvable Multicast correct"
@@ -143,7 +156,7 @@ proof
   qed
 
   show False
-    using CD_impossible_unicast[OF byz_ne cor_ne] unicast_solv by contradiction
+    using CD_impossible_unicast[OF cor_ne bridge] unicast_solv by contradiction
 qed
 
 section \<open>Summary corollary\<close>
@@ -151,18 +164,19 @@ section \<open>Summary corollary\<close>
 text \<open>One statement, all three modes.\<close>
 
 theorem CD_impossible_all_modes:
-  assumes byz_ne: "byzantine \<noteq> {}"
-      and cor_ne: "correct \<noteq> {}"
+  assumes cor_ne: "correct \<noteq> {}"
+      and bridge: "bb_realizes_flp_consensus
+                     procs correct TYPE('s) TYPE('v)"
   shows "\<not> CD_solvable Unicast   correct"
     and "\<not> CD_solvable Broadcast correct"
     and "\<not> CD_solvable Multicast correct"
 proof -
   show "\<not> CD_solvable Unicast correct"
-    by (rule CD_impossible_unicast[OF byz_ne cor_ne])
+    by (rule CD_impossible_unicast[OF cor_ne bridge])
   show "\<not> CD_solvable Broadcast correct"
-    by (rule CD_impossible_broadcast[OF byz_ne cor_ne])
+    by (rule CD_impossible_broadcast[OF cor_ne bridge])
   show "\<not> CD_solvable Multicast correct"
-    by (rule CD_impossible_multicast[OF byz_ne cor_ne])
+    by (rule CD_impossible_multicast[OF cor_ne bridge])
 qed
 
 end \<comment> \<open>context @{locale byzantineSystem_with_identification}\<close>
