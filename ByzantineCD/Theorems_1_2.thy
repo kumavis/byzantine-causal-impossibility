@@ -3,29 +3,62 @@
   Author:  Formalization of Misra & Kshemkalyani, "Byzantine-tolerant
            detection of causality" (Parallel Computing 124, 2025).
 
-  Theorems 1 and 2 of the paper:
+  Theorems 1 and 2 of the paper (Section 4.1, "Two basic results"):
 
-    Theorem 1.  In an asynchronous unicast/multicast/broadcast
-                message-passing system with at least one Byzantine
-                process, no CD-solver can prevent false negatives.
+    Theorem 1 (paper, Section 4.1): "It is impossible to prevent
+      false negatives in solving the causality determination problem
+      (Definition 5) as specified by CD(E, F, e*_i) in an asynchronous
+      unicast/multicast/broadcast-based message passing system with
+      one or more Byzantine processes."
 
-    Theorem 2.  For an internal event e^x_h, in the same system, no
-                CD-solver can prevent both false negatives and false
-                positives in determining the hb relation
-                e^x_h --> e^*_i.
+    Theorem 2 (paper, Section 4.1): "For an internal event e^x_h, it
+      is impossible to prevent false negatives or false positives in
+      determining e^x_h --> e*_i at a correct process p_i in an
+      asynchronous message passing system with one or more Byzantine
+      processes."
 
-  Both proofs are constructive.  Given any candidate solver, we
-  exhibit a concrete admissible adversary - a Byzantine process whose
-  actions cannot be predicted by the algorithm because they involve a
-  fresh natural number that no event in the algorithm's output F uses.
-  For Theorem 1 the fresh number is a message identifier; for
-  Theorem 2 it is a sequence number of an internal event at the
-  Byzantine process.
+  Both theorems are constructive.  Given any candidate CD solver, we
+  exhibit a concrete admissible adversary -- a Byzantine process
+  whose actions cannot be predicted by the algorithm because they
+  involve a "fresh" natural number that no event in the algorithm's
+  output F uses.  For Theorem 1 the fresh number is a message
+  identifier; for Theorem 2 it is a sequence number of an internal
+  event at the Byzantine process.
+
+  Why a fresh nat works.  The CD algorithm sees only the inputs
+  (i, e_star) and produces a finite F.  By choosing an adversary
+  whose execution E includes an event with a "fresh" identifier, we
+  ensure that event is outside events_of F -- and therefore the hb
+  relation in E (where the event participates in a chain to e_star)
+  is not mirrored in F (where the event is absent).  This is the
+  paper's Byzantine-omits-an-event scenario, with the choice of
+  identifier made adversarially.
 
   Stated and proved against the abstract CD-solver signature of
-  CD.thy.  Unlike Theorem 3, they do not invoke FLP, so they are
-  unaffected by the vacuity of the locale axiom
-  flp_consensus_impossibility discussed in Foundation_Vacuity.thy.
+  CD.thy.  Theorems 1 and 2 do NOT invoke FLP, so they are unaffected
+  by the vacuity issue that earlier surrounded the abstract
+  Consensus impossibility (see Foundation_Vacuity.thy).
+
+  Deviations from the paper:
+
+    1. The paper's proof of Theorem 1 mentions two Byzantine
+       strategies: "A Byzantine p_g can suppress letting the rest of
+       the system know of the occurrence of e_g^v or swap the order
+       of occurrence of e_g^v and e_g^v'".  We formalise only the
+       suppression strategy (fresh-id construction); swap is a
+       different attack producing the same conclusion.
+
+    2. The paper's proof of Theorem 2 covers both omit (-> FN) and
+       fake (-> FP) Byzantine strategies.  We discharge only the
+       FN side; FN-OR-FP is the conjunctive disjunction in the
+       theorem statement, so one suffices.
+
+    3. The paper does not assume the CD output is finite.  We do --
+       hypothesis fin_F in both theorems below ("forall i e_star.
+       finite (events_of (fst (alg i e_star)))").  Without this we
+       cannot prove a fresh natural number exists.  Any "reasonable"
+       CD algorithm satisfies this (its F should be supported on
+       procs, which is finite).
 *)
 
 theory Theorems_1_2
@@ -113,25 +146,39 @@ begin
 
 section \<open>Theorem 1: false negatives are unavoidable\<close>
 
-text \<open>Paper, Section 4.1, Theorem 1: ``It is impossible to prevent
-false negatives in solving the causality determination problem
-(Definition 5) as specified by CD(E, F, e*_i) in an asynchronous
-unicast/multicast/broadcast-based message passing system with one or
-more Byzantine processes.''
+text \<open>Paper, Theorem 1 (Section 4.1):
+\begin{quote}
+``It is impossible to prevent false negatives in solving the
+causality determination problem (Definition 5) as specified by
+CD(\<open>E, F, e_i^*\<close>) in an asynchronous unicast/multicast/broadcast-based
+message passing system with one or more Byzantine processes.''
+\end{quote>
 
-\textbf{Construction.}  Given an algorithm @{term alg}, pick a correct
-process @{term p_i} and a Byzantine process @{term p_b}.  Let
-@{term "e_star = Internal p_i 2"}, and let @{term F} be the algorithm's
-collected history on input @{term "(p_i, e_star)"}.  Use a fresh
-message id @{term "m = fresh_nat F"} and build the execution
+Paper's proof sketch:
+\begin{quote}
+``In the determination of \<open>e_h^x \<rightarrow> e_i^*\<close>, a false negative may
+arise when a send-receive event pair (\<open>e_f^u, e_g^v\<close>) in a causal
+chain from \<open>e_h^x\<close> to \<open>e_i^*\<close> is missing as per \<open>F\<close>.  \dots\
+A Byzantine \<open>p_g\<close> can suppress letting the rest of the system know
+of the occurrence of \<open>e_g^v\<close> or swap the order of occurrence of
+\<open>e_g^v\<close> and \<open>e_g^v'\<close> in what it lets the rest of the system know
+about the occurrence of the two local events.''
+\end{quote>
+
+\textbf{Our construction.}  Given an algorithm \<open>alg\<close>, pick a correct
+process \<open>p_i\<close> and a Byzantine process \<open>p_b\<close>.  Take \<open>e_star
+= Internal p_i 2\<close>, and let \<open>F = fst (alg p_i e_star)\<close> be the
+algorithm's collected history on this input.  Use a fresh message
+id \<open>m = fresh_nat F\<close> and build the execution \<open>E\<close>:
 \begin{itemize}
-  \item @{term "E p_b = [Send p_b 1 p_i m]"},
-  \item @{term "E p_i = [Receive p_i 1 p_b m, Internal p_i 2]"},
-  \item @{term "E p = []"} elsewhere.
+  \item \<open>E p_b = [Send p_b 1 p_i m]\<close>;
+  \item \<open>E p_i = [Receive p_i 1 p_b m, Internal p_i 2]\<close>;
+  \item \<open>E p = []\<close> elsewhere.
 \end{itemize}
-The Send event has hb-chain to @{term e_star} in @{term E} (message
-then program order), but is not in @{term "events_of F"} because its
-message id was chosen fresh.  Hence a false negative.\<close>
+The Send event has a hb-chain to \<open>e_star\<close> in \<open>E\<close> (message order
+plus program order at \<open>p_i\<close>), but it is not in \<open>events_of F\<close>
+because its message id was chosen fresh.  Hence \<open>hb_eval E s e_star\<close>
+holds while \<open>hb_eval F s e_star\<close> does not -- a false negative.\<close>
 
 definition fn_E :: "'p \<Rightarrow> 'p \<Rightarrow> nat \<Rightarrow> 'p history" where
   "fn_E p_i p_b m \<equiv>
@@ -369,25 +416,41 @@ qed
 section \<open>Theorem 2: false negatives or false positives are unavoidable
                        for internal events\<close>
 
-text \<open>Paper, Section 4.1, Theorem 2: ``For an internal event e^x_h,
-it is impossible to prevent false negatives or false positives in
-determining e^x_h --> e^*_i at a correct process p_i in an
-asynchronous message passing system with one or more Byzantine
-processes.''
+text \<open>Paper, Theorem 2 (Section 4.1):
+\begin{quote}
+``For an internal event \<open>e_h^x\<close>, it is impossible to prevent false
+negatives or false positives in determining \<open>e_h^x \<rightarrow> e_i^*\<close> at a
+correct process \<open>p_i\<close> in an asynchronous message passing system
+with one or more Byzantine processes.''
+\end{quote>
 
-\textbf{Construction.}  We strengthen the Theorem 1 construction so
-that the witness event is an Internal event at a Byzantine process,
-rather than a Send event.  The Byzantine process @{term p_b} performs
-a chain of @{term k} internal events followed by a single Send to the
-correct target @{term p_i}, where @{term "k = fresh_nat F"} is chosen
-so that the @{term k}-th internal event is outside
-@{term "events_of F"}.  The internal event still has an hb-chain to
-@{term e_star} in @{term E} (through subsequent program order to the
-Send, then message order, then program order at @{term p_i}); but it
-is not in @{term "events_of F"}, so a false negative arises.
+Paper's proof sketch:
+\begin{quote}
+``There may be no other event in the rest of the system to
+corroborate the occurrence of an internal event at a process.  A
+Byzantine process \<open>p_h\<close> can choose to not reveal about an internal
+event \<open>e_h^x\<close> to the rest of the system, leading to a false
+negative that cannot be prevented.  It may also choose to add a fake
+internal event \<open>e_h^x\<close> in what it reveals to the rest of the
+system, leading to a false positive that cannot be prevented.''
+\end{quote>
 
-The paper's Theorem 2 is an FN-or-FP disjunction; we discharge the
-FN side, which suffices for the disjunction.\<close>
+\textbf{Our construction.}  We strengthen the Theorem 1 construction
+so that the witness event is an Internal event at a Byzantine
+process, rather than a Send event.  The Byzantine process \<open>p_b\<close>
+performs a chain of \<open>k\<close> internal events followed by a single Send
+to the correct target \<open>p_i\<close>, where \<open>k = fresh_nat F\<close> is chosen so
+that the \<open>k\<close>-th internal event has a sequence number absent from
+\<open>events_of F\<close>.  The internal event still has an hb-chain to
+\<open>e_star\<close> in \<open>E\<close> (through subsequent program order to the Send,
+then message order, then program order at \<open>p_i\<close>); but the internal
+event itself is not in \<open>events_of F\<close>, so a false negative arises.
+
+\textit{Deviation:} the paper's Theorem 2 is an FN-or-FP disjunction
+(``the Byzantine \<open>p_h\<close> can choose to not reveal \<open>\<dots>\<close> OR \<open>\<dots>\<close>
+add a fake internal event'').  We discharge the FN side
+constructively.  Since the statement is a disjunction (\<open>FN \<or> FP\<close>),
+exhibiting an adversary that produces FN is sufficient.\<close>
 
 definition fn_internal_E :: "'p \<Rightarrow> 'p \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'p history" where
   "fn_internal_E p_i p_b k m \<equiv>
