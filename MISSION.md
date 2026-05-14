@@ -223,3 +223,75 @@ A follow-up message refined the style requirements:
 > install any necessary dependencies to test locally, if you can't try
 > other means, if you can't: stop and report
 
+## Status (initial commit `524a4d2`)
+
+Delivered against the original request:
+
+| Item                                                          | Status                                                                                                                                                         |
+|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ByzantineSystem.thy`                                         | Done.  Locale `process_partition` + `byzantineSystem`; FLP impossibility imported as a locale axiom.  See `README.md` for the discharge sketch.                |
+| `Events.thy`                                                  | Done.  Datatype `'p event`, per-process and global histories, program-order, message-order, transitive closure `hb`, Boolean `hb_eval`.                        |
+| `CD.thy`                                                      | Done.  `valid`, `false_negative`, `false_positive`, adversary record, `produces_valid_F`, `CD_solvable`.                                                       |
+| `BlackBox.thy`                                                | Done.  `w_value`, `bb_output` record, `solves_BlackBox`, `BlackBox_solvable`.                                                                                  |
+| `Reductions.thy` — `consensus_reduces_to_blackbox`            | Done, fully constructive, declarative Isar.                                                                                                                    |
+| `Reductions.thy` — `blackbox_reduces_to_cd`                   | Done, *modulo* one named locale assumption `cd_can_identify_correct` in sub-locale `byzantineSystem_with_identification`.  Paper-faithfulness justified in `README.md`. |
+| `Impossibility.thy` — Theorems 3, 4, 5                        | Done.                                                                                                                                                          |
+| `ROOT`                                                        | Done.                                                                                                                                                          |
+| `README.md` — structure, strategy, gaps, assumptions          | Done.                                                                                                                                                          |
+| Declarative Isar throughout, no apply-style, no silent gaps   | Audited.  `grep` for `apply\|sorry\|oops\|sledgehammer\|try0` in `ByzantineCD/*.thy` returns nothing.                                                          |
+| `isabelle build -D .` succeeds with zero `sorry` / zero `oops`| **Not verified in this environment.**                                                                                                                          |
+
+### Why "isabelle build" was not run
+
+The sandbox in which this work was produced cannot reach the official
+Isabelle distribution.  Specifically:
+
+- `isabelle.in.tum.de` and `www.isa-afp.org` return
+  `HTTP/2 403 host_not_allowed`.
+- `apt-cache search isabelle` returns no hits.
+- GitHub mirrors of `isabelle-prover/mirror-isabelle` are reachable but
+  contain only sources, not a runnable distribution.  Bootstrapping
+  from source requires a multi-hour build with specific Poly/ML and
+  JDK component versions that Isabelle ships in patched form, and the
+  AFP release tarball would still be unreachable.
+
+Per the original "if you can't try other means, if you can't: stop and
+report" instruction, the install was abandoned after exhausting the
+realistic options, and the deliverable is shipped in a state ready to
+build under any environment with Isabelle 2025 + AFP installed:
+
+```sh
+isabelle build -d $AFP -D ByzantineCD
+```
+
+### Open assumptions
+
+Two named assumptions are introduced beyond plain HOL:
+
+1. `byzantineSystem.flp_consensus_impossibility` — the FLP
+   impossibility transferred from the AFP `FLP` entry through the
+   "Byzantine subsumes crash" embedding.  Not an axiom in the
+   mathematical sense (it is a consequence of FLP); it is an axiom
+   *in this session* because we have abstracted away from the AFP
+   entry's record-shaped locale parameters.  Discharged at
+   interpretation time.
+2. `byzantineSystem_with_identification.cd_can_identify_correct` —
+   the positive form of the paper's meta-level argument that any CD
+   solver internally identifies the correct set.  This is the
+   `blackbox_reduces_to_cd` reduction's only non-constructive step;
+   the paper's prose is informal here, and we deliberately chose the
+   smallest assumption that closes the gap rather than papering over
+   it with `sorry`.
+
+Both are documented at length in `README.md`.
+
+## Out-of-scope items (preserved for future work)
+
+- Theorems 6, 7, 8 — `B`-happened-before positive results.  The
+  `Events.thy` foundation is built with `Send` and `Receive` peer
+  fields exactly so that `bhb` can be defined inductively over
+  correct-process paths without reworking the event datatype.
+- Theorems 9 – 14 — cryptography-allowing variants.
+- Theorems 15, 16 — CD vs Consensus relationship results.
+- Theorems 1, 2 — corollaries; provable in the existing setup if
+  desired.
