@@ -130,11 +130,11 @@ lemma produces_valid_F_implies_solves_CD_decision:
   assumes "produces_valid_F C alg"
   shows "\<exists>alg'. solves_CD_decision C alg'"
 proof -
-  define alg' :: "'p cd_solver" where
-    "alg' i e \<equiv> (fst (alg i e), True)"
+  define alg' where
+    "alg' \<equiv> (\<lambda>i e. (fst (alg i e), True))"
   have "solves_CD_decision C alg'"
   proof (unfold solves_CD_decision_def, intro allI impI)
-    fix adv :: "'p adversary"
+    fix adv
     assume A: "adversary_admissible C adv"
     have "fst (alg' (adv_i adv) (adv_e_star adv))
             = fst (alg (adv_i adv) (adv_e_star adv))"
@@ -148,15 +148,15 @@ proof -
            b = valid (adv_E adv) F' (adv_e_star adv))"
       by (simp add: alg'_def Let_def)
   qed
-  thus ?thesis ..
+  thus ?thesis by blast
 qed
 
 section \<open>Communication mode: unicast / broadcast / multicast\<close>
 
 text \<open>The paper distinguishes three modes of communication (Section~2).
-Unicasts are the special case of multicast with @{term "|G| = 1"};
-broadcasts are the special case with @{term "G = P"}.  We carry the mode as
-a tag, used in @{theory_text Impossibility.thy} to specialise the three
+Unicasts are the special case of multicast with \<open>|G| = 1\<close>;
+broadcasts are the special case with \<open>G = P\<close>.  We carry the mode as
+a tag, used in \<open>Impossibility.thy\<close> to specialise the three
 impossibility theorems.\<close>
 
 datatype comm_mode = Unicast | Broadcast | Multicast

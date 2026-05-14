@@ -239,30 +239,51 @@ Delivered against the original request:
 | `ROOT`                                                        | Done.                                                                                                                                                          |
 | `README.md` — structure, strategy, gaps, assumptions          | Done.                                                                                                                                                          |
 | Declarative Isar throughout, no apply-style, no silent gaps   | Audited.  `grep` for `apply\|sorry\|oops\|sledgehammer\|try0` in `ByzantineCD/*.thy` returns nothing.                                                          |
-| `isabelle build -D .` succeeds with zero `sorry` / zero `oops`| **Not verified in this environment.**                                                                                                                          |
+| `isabelle build -D .` succeeds with zero `sorry` / zero `oops`| **Verified** on Isabelle2025-2 + AFP snapshot 2026-05-13 (rebuild log: `0:00:02` ByzantineCD wall-time, all six theories at 100%).                              |
 
-### Why "isabelle build" was not run
+### Build verification (post-hoc)
 
-The sandbox in which this work was produced cannot reach the official
-Isabelle distribution.  Specifically:
+The original sandbox in which the development was produced could not
+reach `isabelle.in.tum.de` or `www.isa-afp.org`, so `isabelle build`
+was deferred.  A subsequent session in a different sandbox could reach
+both, installed Isabelle2025-2 and the AFP snapshot `afp-2026-05-13`,
+and ran the build.  The initial run surfaced a small number of issues
+that the deferred verification had hidden; these were fixed in place:
 
-- `isabelle.in.tum.de` and `www.isa-afp.org` return
-  `HTTP/2 403 host_not_allowed`.
-- `apt-cache search isabelle` returns no hits.
-- GitHub mirrors of `isabelle-prover/mirror-isabelle` are reachable but
-  contain only sources, not a runnable distribution.  Bootstrapping
-  from source requires a multi-hour build with specific Poly/ML and
-  JDK component versions that Isabelle ships in patched form, and the
-  AFP release tarball would still be unreachable.
+- `ByzantineSystem.thy` imported `FLP.Consensus`, which does not exist
+  (Consensus is defined inside `FLPTheorem.thy`, not in a dedicated
+  theory).  Import line corrected.
+- Several `text \<open>...\<close>` antiquotations referenced terms or thms
+  that did not parse / did not yet exist at that program point
+  (`@{const Consensus_solvability}`, forward `@{thm ...}` references
+  across locale boundaries, `@{term "|G| = 1"}`, `@{term "e \<rightarrow> e'"}`).
+  Re-cast as plain Isar inline markup (\<open>...\<close>).
+- One `define alg' :: "'p cd_solver"` introduced a fresh type variable
+  that did not unify with the surrounding lemma's polymorphism.  Type
+  ascription dropped; inference does the right thing.
+- `simp` could not always cross an `if`-`then`-`else` whose conditions
+  were named hypotheses of the surrounding context.  Reformulated those
+  steps as explicit `if_not_P` rewrites composed via `also`/`finally`.
+- Three constructor-side proofs (`wf_history_trivial`,
+  `adversary_admissible_trivial`, the augmented-CD-to-BB
+  `uniform_true` case) were re-expressed declaratively, naming each
+  rewrite step rather than asking `simp` to unfold a record/`if`
+  chain in one shot.
 
-Per the original "if you can't try other means, if you can't: stop and
-report" instruction, the install was abandoned after exhausting the
-realistic options, and the deliverable is shipped in a state ready to
-build under any environment with Isabelle 2025 + AFP installed:
+None of these affected the proof structure or any mathematical content.
+
+Build command, reproducible from any environment that has the deps:
 
 ```sh
 isabelle build -d $AFP -D ByzantineCD
 ```
+
+On JVM-on-NixOS environments specifically, the bundled JDK's
+`libfontmanager.so` calls `dlopen("libfontconfig.so.1")` at startup.
+If no system `libfontconfig.so.1` is on the loader path the JVM
+emits `Fontconfig head is null` to stderr and silently exits with
+rc=2.  Adding a `libfontconfig` to `LD_LIBRARY_PATH` (e.g. via
+`~/.isabelle/Isabelle2025-2/etc/settings`) restores the build.
 
 ### Open assumptions
 

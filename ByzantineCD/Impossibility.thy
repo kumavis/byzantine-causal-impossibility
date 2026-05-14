@@ -31,10 +31,10 @@ text \<open>Paper:
    message-passing system with one or more Byzantine processes.
 \end{quote}
 
-Strategy: we have @{thm consensus_reduces_to_blackbox} and
-@{thm blackbox_reduces_to_cd}; their composition gives
+Strategy: we have \<open>consensus_reduces_to_blackbox\<close> and
+\<open>blackbox_reduces_to_cd\<close>; their composition gives
 Consensus $\preceq$ BlackBox $\preceq$ CD.  The FLP impossibility, imported
-through @{thm byzantineSystem.flp_consensus_impossibility}, then yields the
+through \<open>byzantineSystem.flp_consensus_impossibility\<close>, then yields the
 contradiction whenever @{term "byzantine \<noteq> {}"}.\<close>
 
 context byzantineSystem_with_identification
@@ -117,9 +117,9 @@ text \<open>Paper:
 \end{quote}
 
 In our abstraction the @{const CD_solvable} predicate does not actually
-depend on the mode tag (see comment in @{theory_text CD.thy}); a multicast
+depend on the mode tag (see comment in \<open>CD.thy\<close>); a multicast
 algorithm could in particular be used as a unicast algorithm by
-specialising to @{term "|G| = 1"}.  We therefore reduce Theorem 5 to
+specialising to \<open>|G| = 1\<close>.  We therefore reduce Theorem 5 to
 Theorem 3 explicitly.\<close>
 
 theorem CD_impossible_multicast:

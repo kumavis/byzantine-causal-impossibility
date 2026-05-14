@@ -56,7 +56,23 @@ lemma wf_history_trivial:
   shows "wf_history (trivial_history p_star)"
 proof -
   have "\<And>p. wf_history_local p (trivial_history p_star p)"
-    by (simp add: trivial_history_def wf_history_local_one wf_history_local_empty)
+  proof -
+    fix p
+    show "wf_history_local p (trivial_history p_star p)"
+    proof (cases "p = p_star")
+      case True
+      hence "trivial_history p_star p = [Internal p_star 1]"
+        by (simp add: trivial_history_def)
+      thus ?thesis
+        using True wf_history_local_one by simp
+    next
+      case False
+      hence "trivial_history p_star p = []"
+        by (simp add: trivial_history_def)
+      thus ?thesis
+        using wf_history_local_empty by simp
+    qed
+  qed
   thus ?thesis by (simp add: wf_history_def)
 qed
 
@@ -75,18 +91,24 @@ lemma adversary_admissible_trivial:
   assumes "p_star \<in> C"
   shows "adversary_admissible C (trivial_adversary p_star)"
 proof -
-  have "wf_history (trivial_history p_star)"
-    by (rule wf_history_trivial)
+  have eE: "adv_E (trivial_adversary p_star) = trivial_history p_star"
+    by (simp add: trivial_adversary_def)
+  have eI: "adv_i (trivial_adversary p_star) = p_star"
+    by (simp add: trivial_adversary_def)
+  have eS: "adv_e_star (trivial_adversary p_star) = trivial_event p_star"
+    by (simp add: trivial_adversary_def)
+  have "wf_history (adv_E (trivial_adversary p_star))"
+    using wf_history_trivial eE by simp
   moreover have "adv_i (trivial_adversary p_star) \<in> C"
-    using assms by (simp add: trivial_adversary_def)
+    using assms eI by simp
   moreover have
     "proc_of (adv_e_star (trivial_adversary p_star))
        = adv_i (trivial_adversary p_star)"
-    by (simp add: trivial_adversary_def trivial_event_def)
+    by (simp add: eS eI trivial_event_def)
   moreover have
     "adv_e_star (trivial_adversary p_star)
        \<in> events_of (adv_E (trivial_adversary p_star))"
-    by (simp add: trivial_adversary_def trivial_event_def events_of_trivial)
+    by (simp add: eE eS events_of_trivial trivial_event_def)
   ultimately show ?thesis by (simp add: adversary_admissible_def)
 qed
 
@@ -255,8 +277,8 @@ text \<open>The paper's argument (\S4.2):
 
 The paper does not exhibit a syntactic construction of a Black\_Box solver
 from a CD solver; the argument is meta-level.  We capture this faithfully
-as a single, named locale assumption (@{thm [source]
-\<open>byzantineSystem_with_identification.cd_can_identify_correct\<close>}) and
+as a single, named locale assumption
+(\<open>byzantineSystem_with_identification.cd_can_identify_correct\<close>) and
 discharge the reduction from it constructively.
 
 \medskip
@@ -324,7 +346,7 @@ lemma bb_from_cd_with_L_correct:
   assumes augmented: "produces_valid_F_with_L correct cd_alg'"
   shows "solves_BlackBox procs correct (bb_from_cd_with_L cd_alg')"
 proof (unfold solves_BlackBox_def, intro allI impI)
-  fix V :: "'p \<Rightarrow> bool" and adv :: "'p adversary"
+  fix V adv
   assume adm: "adversary_admissible correct adv"
 
   \<comment> \<open>Decompose the augmented CD solver's output.\<close>
@@ -382,8 +404,17 @@ proof (unfold solves_BlackBox_def, intro allI impI)
     next
       case uniform_true
       have C_ne: "correct \<noteq> {}" using uniform_true(2) uniform_true(1) by blast
+      have inner_reduce:
+        "(if (\<forall>p \<in> correct. V p) then True else b) = True"
+        using uniform_true(2) by simp
+      have outer_reduce:
+        "(if (\<forall>p \<in> correct. \<not> V p) then False
+          else if (\<forall>p \<in> correct. V p) then True
+          else b)
+         = (if (\<forall>p \<in> correct. V p) then True else b)"
+        using uniform_true(1) by (rule if_not_P)
       have "bb_w ?out = True"
-        by (simp add: w_field uniform_true)
+        using w_field outer_reduce inner_reduce by simp
       moreover have
         "w_value correct V (adv_E adv) (bb_F ?out) (adv_e_star adv) = True"
         by (rule w_value_uniform_true[OF C_ne uniform_true(2)])

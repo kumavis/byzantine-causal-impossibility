@@ -36,8 +36,8 @@ abbreviation is_internal :: "'p event \<Rightarrow> bool" where
   "is_internal e \<equiv> (\<exists>p n. e = Internal p n)"
 
 text \<open>The send and the corresponding receive of the same message are
-identified by a shared @{term msg_id}.  We define the @{const matches}
-predicate accordingly.\<close>
+identified by a shared @{term msg_id}.  The \<open>matches\<close> predicate below
+captures this.\<close>
 
 fun matches :: "'p event \<Rightarrow> 'p event \<Rightarrow> bool" where
   "matches (Send p n q m) (Receive q' n' p' m') \<longleftrightarrow> (p = p' \<and> q = q' \<and> m = m')"
@@ -86,7 +86,7 @@ definition program_order :: "'p history \<Rightarrow> 'p event \<Rightarrow> 'p 
 
 text \<open>Message order: if @{term e} is a send recorded somewhere in the global
 history and the matching receive @{term e'} is also recorded, then
-@{term "e \<rightarrow> e'"} (Definition~1, rule~2 of the paper).\<close>
+\<open>e \<rightarrow> e'\<close> holds (Definition~1, rule~2 of the paper).\<close>
 
 definition message_order :: "'p history \<Rightarrow> 'p event \<Rightarrow> 'p event \<Rightarrow> bool" where
   "message_order H e e' \<longleftrightarrow>
@@ -114,8 +114,8 @@ definition hb_eval :: "'p history \<Rightarrow> 'p event \<Rightarrow> 'p event 
 
 section \<open>Causal past\<close>
 
-text \<open>Definition~2: the causal past @{term "CP e"} is the set of events that
-causally precede @{term e} under @{term \<rightarrow>}.\<close>
+text \<open>Definition~2: the causal past \<open>CP e\<close> is the set of events that
+causally precede @{term e} under \<open>\<rightarrow>\<close>.\<close>
 
 definition causal_past :: "'p history \<Rightarrow> 'p event \<Rightarrow> 'p event set" where
   "causal_past H e = {e'. hb_eval H e' e}"
