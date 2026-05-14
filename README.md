@@ -49,9 +49,18 @@ of its own.
 
 In scope, fully proved:
 
+- **Theorem 1** (`CD_FN_unavoidable` in `Theorems_1_2.thy`): no CD-solver
+  can prevent false negatives in an asynchronous message-passing system
+  with at least one Byzantine process.  Constructive: given any candidate
+  algorithm we exhibit an explicit adversary using a fresh message id.
+- **Theorem 2** (`CD_FN_or_FP_unavoidable_internal`): for internal events,
+  no CD-solver can prevent both false negatives and false positives.
+  Constructive: the same shape of adversary using a fresh internal event
+  at the Byzantine process.
 - **Theorem 3** (`CD_impossible_unicast`): CD unsolvable in asynchronous
-  unicast with one or more Byzantine processes.
-- **Theorem 4** (`CD_impossible_broadcast`): same, broadcast.
+  unicast with one or more Byzantine processes.  *Caveat: vacuous at the
+  current abstraction — see `Foundation_Vacuity.thy`.*
+- **Theorem 4** (`CD_impossible_broadcast`): same, broadcast.  Same caveat.
 - **Theorem 5** (`CD_impossible_multicast`): trivial corollary of 3.
 
 Out of scope (left as deliberate extension points; see `Events.thy`'s
@@ -61,8 +70,6 @@ B-happened-before relation):
 - Theorems 6–8 (B-happened-before positive results)
 - Theorems 9–14 (cryptography-allowing variants)
 - Theorems 15–16 (CD vs Consensus relationships)
-- Theorems 1–2 (corollaries; the foundation is enough to add them in a few
-  lines if wanted)
 
 ## File structure
 
@@ -75,6 +82,7 @@ B-happened-before relation):
 | `BlackBox.thy`             | `w_value`, BB output record, `solves_BlackBox`, `BlackBox_solvable`.                                                 |
 | `Reductions.thy`           | The two reductions of §4.2.  Constructive proofs in declarative Isar.                                                |
 | `Impossibility.thy`        | Theorems 3, 4, 5 plus a summary corollary.                                                                           |
+| `Theorems_1_2.thy`         | Theorems 1 and 2 (FN-unavoidable, FN-or-FP-unavoidable for internal events).  Constructive adversaries via fresh ids.|
 | `Foundation_Vacuity.thy`   | Diagnostic: machine-checked counter-example showing `flp_consensus_impossibility` is unsatisfiable at this abstraction. |
 
 ## Proof strategy
