@@ -1,0 +1,1876 @@
+Parallel Computing 124 (2025) 103136
+
+Contents lists available at ScienceDirect
+
+Parallel Computing
+journal homepage: www.elsevier.com/locate/parco
+
+Byzantine-tolerant detection of causality: There is no holy grailI
+Anshuman Misra a,b , Ajay D. Kshemkalyani a
+a
+b
+
+,∗
+
+Department of Computer Science, University of Illinois Chicago, Chicago, 60607, IL, USA
+Department of Computer Science, Purdue University Fort Wayne, Fort Wayne, 46805, IN, USA
+
+ARTICLE
+
+INFO
+
+Keywords:
+Byzantine fault-tolerance
+Causality
+‘‘Happened before’’ relation
+Asynchronous system
+Distributed system
+Message-passing
+
+ABSTRACT
+Detecting causality or the ‘‘happened before’’ relation between events in an asynchronous distributed system
+is a widely used building block in distributed applications. To the best of our knowledge, this problem has
+not been examined in a system with Byzantine processes. We prove the following results for an asynchronous
+system with Byzantine processes. (1) We prove that it is impossible to determine causality between events
+in the presence of even a single Byzantine process when processes communicate by unicasting. (2) We also
+prove a similar impossibility result when processes communicate by broadcasting. (3) We also prove a similar
+impossibility result when processes communicate by multicasting. (4–5) In an execution where there exists
+a causal path between two events passing through only correct processes, we prove that it is possible to
+detect causality between such a pair of events when processes communicate by unicasting or broadcasting.
+(6) However, when processes communicate by multicasting and there exists a causal path between two events
+passing through only correct processes, we prove that it is impossible to detect causality between such a
+pair of events. (7–9) Even with the use of cryptography, we prove that the impossibility results of (1–3) for
+unicasts, broadcasts, and multicasts, respectively, hold. (10–12) With the use of cryptography, when there
+exists a causal path between two events passing through only correct processes, we prove it is possible to
+detect causality between such a pair of events, irrespective of whether the communication is by unicasts,
+broadcasts, or multicasts. Our results are significant because Byzantine systems mirror the real world.
+
+1. Introduction
+Causality is an important tool in understanding and reasoning about
+distributed system executions [2]. In a seminal paper, Lamport formulated the ‘‘happened before’’ or the causality relation, denoted →,
+between events in an asynchronous distributed system [3]. Given two
+events 𝑒 and 𝑒′ , the causality determination problem asks to determine
+whether 𝑒 → 𝑒′ . Applications of causality determination include determining consistent recovery points in distributed databases, deadlock
+detection, termination detection, distributed predicate detection, distributed debugging and monitoring, the detection of race conditions
+and other synchronization errors [4].
+The causality relation between events can be captured by tracking causality graphs [5], scalar clocks [3], vector clocks [6–8], matrix and higher-dimensional clocks [9] and numerous other variants
+(such as hierarchical clocks [10,11], plausible clocks [12], incremental
+clocks [13], dotted version vectors [14], interval tree clocks [15],
+logical physical clocks [16], encoded vector clocks [17], and Bloom
+clocks [18,19] to mention a few), proposed since Lamport’s seminal
+paper [3]. Indirections in knowledge about local logical times can be
+
+captured by the abstraction in [9]. See [2,4] or a more recent survey included in [20]. Some of these variants track causality accurately while
+others introduce approximations and inaccuracies as trade-offs in the
+interest of savings on the space and/or time and/or message complexity
+overheads. As enunciated by Schwarz and Mattern [2], the search for
+the holy grail of the ideal causality tracking mechanism is on. However,
+all these works in the literature assume that processes are correct.
+To the best of our knowledge, there has been no work on detecting
+the causality relation between events in the presence of Byzantine
+processes in the system. It is important to solve this problem under the
+Byzantine failure model as opposed to a failure-free setting because it
+mirrors the real world.
+The related problem of causal ordering of messages asks that if the
+send event of message 𝑚 happened before the send event of message
+𝑚′ , then 𝑚′ should not be delivered before 𝑚 at all common destinations
+of 𝑚 and 𝑚′ [21]. Causal ordering of messages has numerous applications such as in distributed data stores, fair resource allocation, and
+collaborative applications such as social networks, multiplayer online
+gaming, group editing of documents, event notification systems, and
+
+I An earlier version of this result appeared in Proceedings of IEEE NCA 2022, Misra and Kshemkalyani (2022) [1].
+∗ Corresponding author.
+
+E-mail address: ajay@uic.edu (A.D. Kshemkalyani).
+https://doi.org/10.1016/j.parco.2025.103136
+Received 22 July 2024; Received in revised form 22 March 2025; Accepted 29 March 2025
+Available online 9 April 2025
+0167-8191/© 2025 The Authors. Published by Elsevier B.V. This is an open access article under the CC BY license (http://creativecommons.org/licenses/by/4.0/).
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+Table 1
+𝐵
+Detecting causality between events under different communication modes. 𝐹 𝑃 is false positive, 𝐹 𝑁 is false negative. 𝐹 𝑃𝐵 is false positive under ←←←→.
+← 𝐹 𝑁𝐵 is false negative under
+𝐵
+
+𝐵
+
+𝐵
+
+←←←→.
+← 𝐹 𝑃 , 𝐹 𝑃𝐵 , 𝐹 𝑁𝐵 indicate that the corresponding false positives under →, false positives under ←←←→,
+← false negatives under ←←←→
+← cannot occur. Next to each result, the relation between
+𝑡 (number of Byzantine processes) and 𝑛 (total number of processes) is given.
+Mode of
+
+Detecting ‘‘happened
+
+Detecting ‘‘Byzantine
+
+Detecting ‘‘happened
+
+Detecting ‘‘Byzantine
+
+communication
+
+before’’ 𝑒 → 𝑒′
+
+happened before’’ 𝑒 ←←←→
+← 𝑒′
+
+before’’ 𝑒 → 𝑒′ using
+cryptography
+
+happened before’’ 𝑒 ←←←→
+← 𝑒′
+using cryptography
+
+Unicasts
+
+Impossible, Theorem 3
+𝐹 𝑃 (𝑡 > 0), 𝐹 𝑁 (𝑡 > 0)
+
+Possible, Theorem 6
+𝐹 𝑃𝐵 (𝑡 < 𝑛), 𝐹 𝑁𝐵 (𝑡 < 𝑛)
+
+Impossible, Theorem 10
+𝐹 𝑃 a (𝑡 < 𝑛∕3), 𝐹 𝑁 (𝑡 > 0)
+
+Possible, Theorem 12
+𝐹 𝑃𝐵 (𝑡 < 𝑛), 𝐹 𝑁𝐵 (𝑡 < 𝑛)
+
+Broadcasts
+
+Impossible, Theorem 4
+𝐹 𝑃 (𝑡 < 𝑛∕3), 𝐹 𝑁 (𝑡 > 0)
+
+Possible, Theorem 7
+𝐹 𝑃𝐵 (𝑡 < 𝑛), 𝐹 𝑁𝐵 (𝑡 < 𝑛)
+
+Impossible, Theorem 11
+𝐹 𝑃 (𝑡 < 𝑛∕3), 𝐹 𝑁 (𝑡 > 0)
+
+Possible, Theorem 13
+𝐹 𝑃𝐵 (𝑡 < 𝑛), 𝐹 𝑁𝐵 (𝑡 < 𝑛)
+
+Multicasts
+
+Impossibleb,c , Theorem 5
+𝐹 𝑃 (𝑡 > 0), 𝐹 𝑁 (𝑡 > 0)
+
+Impossibleb , Theorem 8
+𝐹 𝑃𝐵 (𝑡 > 0), 𝐹 𝑁𝐵 (𝑡 > 0)
+
+Impossible, Theorem 9
+𝐹 𝑃 a (𝑡 < 𝑛∕3), 𝐹 𝑁 (𝑡 > 0)
+
+Possible, Theorem 14
+𝐹 𝑃𝐵 (𝑡 < 𝑛), 𝐹 𝑁𝐵 (𝑡 < 𝑛)
+
+𝐵
+
+𝐵
+
+a
+
+False positive 𝐹 𝑃 holds if the semantics of the message content in a message dependency matters.
+Without using cryptography, it is impossible to implement Byzantine Reliable Multicast (BRM) in multiple groups as this entails identifying the Byzantine processes to satisfy
+𝑡𝐺 < |𝐺|∕3, where 𝑡𝐺 is the number of Byzantine processes in group 𝐺.
+b
+
+c
+
+Even with access to a black box that implements BRM within groups, 𝐹 𝑃 and 𝐹 𝑁 hold.
+
+distributed virtual environments. Causal ordering of messages under
+the Byzantine failure model has recently been examined in [22] for
+broadcast communication and in [23–28] for unicast, multicast, as well
+as broadcast communication. An algorithm for Byzantine causal order
+of broadcast messages was given in [22]; this was based on a definition
+of Byzantine causal order on broadcast messages. This definition was
+modified in several ways to account for the purest (weakest) notion
+of safety [23], and several possibility and impossibility results about
+Byzantine causal order of unicast, multicast, and broadcast messages
+were proved [23]. The algorithm in [22] is an instantiation for one of
+the many results proved in [23] on causal ordering of messages. Several
+algorithms for causal ordering of messages under varied settings and
+assumptions on the system model were given in [24–28]. In contrast,
+this paper uses a definition of Byzantine causal order on events that can
+be viewed as an adaptation of the definition in [23].
+Contributions: Our main result is that it is impossible to (deterministically) determine the causality relation → between two events 𝑒1 and
+𝑒2 when there is even a single Byzantine process in an asynchronous
+distributed system. False negatives and/or false positives are possible. A
+false negative means that 𝑒 → 𝑒′ whereas 𝑒 ↛ 𝑒′ is perceived/detected.
+A false positive means that 𝑒 ↛ 𝑒′ whereas 𝑒 → 𝑒′ is detected. In light
+of this negative result, we investigate whether any positive result can
+be shown in a system with stronger assumptions.
+
+4. In an execution where there exists a causal path between two
+𝐵
+
+events passing through only correct processes, i.e., ←←←→
+← holds between the two events, and processes communicate by unicasting,
+we prove that it is possible to detect causality between such
+a pair of events (Theorem 6). Neither false positives nor false
+𝐵
+
+negatives can occur under ←←←→.
+← But under the → relation, false
+positives and false negatives can occur.
+5. We also prove a similar possibility result when processes communicate by broadcasting and there exists a causal path between
+𝐵
+
+two events passing through only correct processes, i.e., ←←←→
+← holds
+between the two events (Theorem 7). Neither false positives nor
+𝐵
+
+false negatives can occur under ←←←→.
+← Under the → relation, false
+positives cannot occur but false negatives can occur.
+6. We prove an impossibility result when processes communicate
+by multicasting and there exists a causal path between two
+𝐵
+
+events passing through only correct processes, i.e., ←←←→
+← holds
+between the two events (Theorem 8). False positives and false
+𝐵
+
+negatives may occur under ←←←→
+← and under the → relation.
+7. We prove that is impossible to determine causality between
+events in the presence of even a single Byzantine process when
+processes communicate by multicasting, even when cryptographic techniques are used (Theorem 9). False positives do not
+occur (provided the semantics of contents of messages are not
+accounted for) but false negatives can occur.
+8. We also prove that the same above impossibility result holds
+when processes communicate by unicasting despite the use of
+cryptography (Theorem 10).
+9. We prove an impossibility result for broadcasts allowing the
+use of cryptography and show it is the same as that without
+cryptography (Theorem 11) — false positives do not occur but
+false negatives can occur.
+10. With the use of cryptography, when there exists a causal path
+between two events passing through only correct processes, we
+prove it is possible to detect causality between such a pair of
+events, irrespective of whether the communication is by unicasts
+(Theorem 12), broadcasts (Theorem 13), or multicasts (Theorem
+14). Neither false positives nor false negatives can occur under
+
+𝐵
+
+• First, we introduce the Byzantine happened before relation ←←←→,
+←
+𝐵
+
+where 𝑒1 ←←←→
+← 𝑒2 if 𝑒1 → 𝑒2 and there exists a causal path from 𝑒1
+to 𝑒2 via the transitive closure of the local order of events and the
+order of message-passing send and corresponding receive events,
+𝐵
+
+going through only correct (non-Byzantine) processes. If 𝑒1 ←←←→
+← 𝑒2,
+then we show that causality can be determined for unicasts and
+broadcasts but not for multicasts.
+• Second, we show that even with the use of cryptography, the impossibility results for unicasts, multicasts, and broadcasts remain.
+• Third, with the use of cryptography, we show possibility results
+𝐵
+
+for unicasts, broadcasts, and multicasts under ←←←→.
+←
+We prove the following results for an asynchronous system with
+Byzantine processes.
+
+𝐵
+
+1. We prove that it is impossible to determine causality between
+events in the presence of even a single Byzantine process when
+processes communicate by unicasting (Theorem 3). This is because both false positives and false negatives can occur.
+2. We also prove a similar impossibility result when processes
+communicate by broadcasting (Theorem 4). In this case, false
+positives cannot occur but false negatives can occur.
+3. We also prove a similar impossibility result when processes
+communicate by multicasting (Theorem 5). Both false positives
+and false negatives can occur.
+
+←←←→
+← while no false positives but false negatives can occur under
+→.
+Table 1 summarizes these results. For each result, the relationship
+between the number of Byzantine processes 𝑡 and the total number of
+processes 𝑛 is also stated. The key technical difficulty was in identifying
+and analyzing the various cases, and proving the results. An earlier
+version of this paper was published as [1]. It has been significantly enhanced and has added details and reworked, formal proofs. New results
+in a new Section 4.1 and on the solvability of detecting causality using
+2
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+1. Program Order: For the sequence of events ⟨𝑒1𝑖 , 𝑒2𝑖 , …⟩ executed
+
+cryptography in a new Section 4.4 are added. A new Section 5 gives
+certain relationships between the causality determination problem in
+asynchronous systems and related problems/models.
+Roadmap. Section 2 gives the system model. Section 3 formulates
+the problem of detecting causality. Section 4 proves the results outlined under ‘‘Contributions’’ above. Section 5 proves some relationships
+between the causality detection problem and other related problems.
+Section 6 gives a discussion and concludes.
+
+𝐵
+
+by a correct process 𝑝𝑖 , ∀ 𝑥, 𝑦 such that 𝑥 < 𝑦 we have 𝑒𝑥𝑖 ←←←→
+← 𝑒𝑦𝑖 .
+𝑥
+2. Message Order: If event 𝑒𝑖 is a message send event executed at
+correct process 𝑝𝑖 and 𝑒𝑦𝑗 is the corresponding message receive
+𝐵
+
+event at correct process 𝑝𝑗 , then 𝑒𝑥𝑖 ←←←→
+← 𝑒𝑦𝑗 .
+𝐵
+
+𝐵
+
+𝐵
+
+3. Transitive Order: If 𝑒 ←←←→
+← 𝑒′ ∧ 𝑒′ ←←←→
+← 𝑒′′ then 𝑒 ←←←→
+← 𝑒′′ .
+𝐵
+
+When 𝑒 ←←←→
+← 𝑒′ , then there exists a causal chain from 𝑒 to 𝑒′ along
+correct processes that sent messages along that chain.
+Note that the classic happened before relation (Definition 1) applies
+regardless of the failure model. However, as we prove, detecting it without both false positives and false negatives is impossible in all system
+model settings considered under the Byzantine failure model. Hence a
+weaker variant – the Byzantine happened before relation (Definition
+3) – has been defined. A version of this definition was first defined on
+messages [22,23,25]. This definition weakens the causality property to
+make it detectable in some system model settings under the Byzantine
+failure model. In essence, the choice between the two relations is
+an application-level decision rather than an intrinsic property of the
+Byzantine failure model. Depending on the possibility of detection, the
+level of causal guarantees required, and costs, an application can select
+the appropriate relation to meet its requirements.
+There are three modes of communication: multicast, unicast, and
+broadcast. In multicast, a message is sent to a group 𝐺 of processes
+corresponding to some subset of 𝑃 . A unicast is a multicast where
+|𝐺| = 1. A broadcast is a multicast where 𝐺 = 𝑃 . We specify the
+multicast definition formally, tailored for Byzantine-tolerant systems.
+
+2. System model
+This paper deals with an asynchronous distributed system having
+Byzantine processes which are processes that can misbehave [29,30].
+A correct process behaves exactly as specified by the algorithm whereas
+a Byzantine process may deviate arbitrarily from its protocol behavior.
+A Byzantine process cannot impersonate another process or spawn
+new processes. Besides distributed systems, Byzantine attacks have
+been extensively studied in many physical systems and multi-agent
+systems [31,32].
+The distributed system is modeled as an undirected graph 𝐺 =
+(𝑃 , 𝐶). Here 𝑃 is the set of processes communicating asynchronously
+in the distributed system. Let |𝑃 | = 𝑛. 𝐶 is the set of FIFO (logical)
+communication links over which processes communicate by message
+passing. 𝐺 is a complete graph.
+The distributed system is assumed to be asynchronous, i.e., there
+is no fixed upper bound 𝛿 on the message latency, nor any fixed
+upper bound 𝜓 on the relative speeds of processors [33]. In contrast, a
+synchronous system has been defined as one in which both 𝛿 and 𝜓 exist
+and are known. [33]. A partially synchronous system is an asynchronous
+system but with periods of synchrony [33].
+We first do not consider the use of digital signatures/ cryptography
+in the system model because of the high cost. Then in a separate
+section we show results in a model that allows the use of digital
+signatures/cryptography.
+Let 𝑒𝑥𝑖 , where 𝑥 ≥ 1, denote the 𝑥th event executed by process
+𝑝𝑖 . An event may be an internal event, a message send event, or a
+message receive event. Let the state of 𝑝𝑖 after 𝑒𝑥𝑖 be denoted 𝑠𝑥𝑖 , where
+𝑥 ≥ 1, and let 𝑠0𝑖 be the initial state. The execution at 𝑝𝑖 is the sequence
+of alternating events and resulting states, as ⟨𝑠0𝑖 , 𝑒1𝑖 , 𝑠1𝑖 , 𝑒2𝑖 , 𝑠2𝑖 …⟩. The
+execution history at 𝑝𝑖 is the finite execution at 𝑝𝑖 up to the current or
+most recent or specified local state. The happened before [3] relation,
+denoted →, is an irreflexive, asymmetric, and transitive partial order
+defined over events in a distributed execution that is used to define
+causality.
+
+Definition 4. Byzantine Reliable Multicast (BRM) to group 𝐺 satisfies
+the following properties:
+1. (Validity:) If a correct process 𝑝𝑖 delivers message 𝑚 from a
+correct process 𝑠𝑒𝑛𝑑𝑒𝑟(𝑚) sent to group 𝐺, then 𝑠𝑒𝑛𝑑𝑒𝑟(𝑚) must
+have executed send(𝑚, 𝐺) and 𝑝𝑖 ∈ 𝐺.
+2. (Self-delivery:) If a correct process executes send(𝑚, 𝐺), then it
+eventually delivers 𝑚.
+3. (Reliability/Termination:) If a correct process delivers a message
+𝑚 from a possibly faulty process, then all correct processes in 𝐺
+will eventually deliver 𝑚.
+4. (Integrity:) For any message 𝑚, a correct process 𝑝𝑖 delivers 𝑚 at
+most once.
+5. (No Information Leakage:) No process outside the group 𝐺 sees
+the content of 𝑚.
+As a unicast has a single destination, the Reliability/Termination
+property of BRM does not apply to Byzantine Reliable Unicast (BRU).
+As the destination set of a broadcast is the set of all processes, the
+No Information Leakage property of BRM does not apply to Byzantine
+Reliable Broadcast (BRB).
+
+Definition 1. The happened before relation → on events consists of
+the following rules:
+1. Program Order: For the sequence of events ⟨𝑒1𝑖 , 𝑒2𝑖 , …⟩ executed
+by process 𝑝𝑖 , ∀ 𝑥, 𝑦 such that 𝑥 < 𝑦 we have 𝑒𝑥𝑖 → 𝑒𝑦𝑖 .
+2. Message Order: If event 𝑒𝑥𝑖 is a message send event executed at
+process 𝑝𝑖 and 𝑒𝑦𝑗 is the corresponding message receive event at
+process 𝑝𝑗 , then 𝑒𝑥𝑖 → 𝑒𝑦𝑗 .
+
+𝐵
+
+In our analysis of causality detection under ←←←→,
+← we use Byzantine Causal Broadcast (BCB) with operations bco_broadcast() and
+bco_deliver(), where BCB is defined as BRB + a property BCO𝐵
+
+Causality based on the Byzantine happened before relation ←←←→
+← on
+messages sent by and delivered at correct processes [23,25,28], similar
+to [22].
+
+3. Transitive Order: If 𝑒 → 𝑒′ ∧ 𝑒′ → 𝑒′′ then 𝑒 → 𝑒′′ .
+Definition 2. The causal past of an event 𝑒 is denoted as 𝐶𝑃 (𝑒) and
+defined as the set of events that causally precede 𝑒 under →.
+
+• BCO-Causality: for messages 𝑚, 𝑚′ sent at events 𝑒, 𝑒′ , respec𝐵
+
+tively, if 𝑒 ←←←→
+← 𝑒′ then no correct process bco_delivers 𝑚′
+before 𝑚.
+
+We require an extension of the happened before relation on events
+to accommodate the possibility of Byzantine behavior. We present a
+partial order on messages called Byzantine happened before, denoted as
+
+3. Problem formulation
+
+𝐵
+
+←←←→,
+← defined on the set of all events at correct processes in 𝑃 .
+An algorithm to solve the causality determination problem collects
+the execution history of each process in the system and derives causal
+relations from it. Let 𝐸𝑖 denote the actual execution history at 𝑝𝑖 (which
+
+𝐵
+
+Definition 3. The Byzantine happened before relation ←←←→
+← on events
+at correct processes consists of the following rules:
+3
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+was defined as the sequence of alternating events and resulting states)
+⋃
+and let 𝐸 =
+𝑖 {𝐸𝑖 }. (Here the range of 𝑖 is the set of process ids
+in 𝑃 ; here and subsequently the range of variables should be clear
+from context and is omitted to avoid excessive cluttering.) For any
+causality determination algorithm, let 𝐹𝑖 be the execution history at
+⋃
+𝑝𝑖 as perceived and collected by the algorithm and let 𝐹 = 𝑖 {𝐹𝑖 }. 𝐹
+thus denotes the execution history as collected by the algorithm. Let
+𝑇 (𝐸) and 𝑇 (𝐹 ) denote the sets of all events in 𝐸 and 𝐹 , respectively.
+Analogous to Definitions 1 and 3, we can define the happened before
+and Byzantine happened before relations on 𝑇 (𝐹 ) instead of on 𝑇 (𝐸).
+Let 𝑒1 → 𝑒2|𝐸 and 𝑒1 → 𝑒2|𝐹 be the evaluation (1 or 0) of 𝑒1 →
+𝑒2 using 𝐸 and 𝐹 , respectively. Byzantine processes may corrupt the
+collection of 𝐹 to make it different from 𝐸. We assume that a correct
+process 𝑝𝑖 needs to determine whether 𝑒𝑥ℎ → 𝑒∗𝑖 holds and 𝑒∗𝑖 is an event
+in 𝑇 (𝐸). If 𝑒𝑥ℎ ∉ 𝑇 (𝐸) then 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 evaluates to false; note that
+𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 may evaluate to false even if 𝑒𝑥ℎ ∈ 𝑇 (𝐸). If 𝑒𝑥ℎ ∉ 𝑇 (𝐹 ) (or
+𝑒∗𝑖 ∉ 𝑇 (𝐹 )) then 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 evaluates to false. We assume an oracle
+that is used for determining correctness of the causality determination
+algorithm; this oracle has access to 𝐸 which can be any execution
+history such that 𝑇 (𝐸) ⊇ 𝐶𝑃 (𝑒∗𝑖 ). Byzantine processes may collude as
+follows.
+
+1. In 𝐸, we have 𝑒_𝑠𝑐1 → 𝑒_𝑟𝑏 → 𝑒_𝑠𝑏 → 𝑒_𝑟𝑐2 . If 𝐹 at the correct
+processes does not match this (specifically, 𝑒_𝑟𝑏 ↛ 𝑒_𝑠𝑏 due
+to 𝑝𝑏 lying), a causality detection algorithm fails to recognize
+𝑒_𝑠𝑐1 → 𝑒_𝑟𝑐2 , resulting in a false negative.
+2. In 𝐸, we have 𝑒_𝑠𝑐1 → 𝑒_𝑟𝑏 , 𝑒_𝑠𝑏 → 𝑒_𝑟𝑐2 , and 𝑒_𝑠𝑏 → 𝑒_𝑟𝑏 . If 𝐹 at
+the correct processes does not match this and reflects 𝑒_𝑟𝑏 → 𝑒_𝑠𝑏
+(due to 𝑝𝑏 lying), a causality detection algorithm wrongly detects
+𝑒_𝑠𝑐1 → 𝑒_𝑟𝑐2 , resulting in a false positive.
+Or let 𝑝𝑏1 and 𝑝𝑏2 be Byzantine processes. Let message 𝑚1 sent at 𝑒_𝑠𝑐1
+be received at 𝑒_𝑟𝑏1 . Let message 𝑚2 sent at 𝑒_𝑠𝑏2 be received at 𝑒_𝑟𝑐2 .
+Consider the following scenarios.
+1. In 𝐸, we have 𝑒_𝑠𝑐1 → 𝑒_𝑟𝑏1 → 𝑒_𝑠𝑏1 → 𝑒_𝑟𝑏2 → 𝑒_𝑠𝑏2 → 𝑒_𝑟𝑐2 . If
+𝐹 at the correct processes does not match this (specifically, 𝑒_𝑠𝑏1
+and 𝑒_𝑟𝑏2 are not revealed due to 𝑝𝑏1 and 𝑝𝑏2 lying), a causality
+detection algorithm fails to recognize 𝑒_𝑠𝑐1 → 𝑒_𝑟𝑐2 , resulting in
+a false negative.
+2. In 𝐸, we have 𝑒_𝑠𝑐1 → 𝑒_𝑟𝑏1 , 𝑒_𝑠𝑏2 → 𝑒_𝑟𝑐2 . If 𝐹 at the correct
+processes does not match this and reflects 𝑒_𝑠𝑐1 → 𝑒_𝑟𝑏1 →
+𝑒_𝑠𝑏1 → 𝑒_𝑟𝑏2 → 𝑒_𝑠𝑏2 → 𝑒_𝑟𝑐2 (due to 𝑝𝑏1 and 𝑝𝑏2 lying),
+a causality detection algorithm wrongly detects 𝑒_𝑠𝑐1 → 𝑒_𝑟𝑐2 ,
+resulting in a false positive.
+
+1. To delete 𝑒𝑥ℎ from 𝐹ℎ or in general, record 𝐹 as any alteration of
+𝐸 such that 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 = 0, while 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 1, or
+
+Therefore it not sufficient for the correct processes to agree mutually
+on a 𝐹 that differs from 𝐸 in what happened in 𝐸 at the Byzantine
+processes; their 𝐹𝑗 must also agree with 𝐸𝑗 at all processes 𝑝𝑗 .
+
+2. To add a fake event 𝑒𝑥ℎ in 𝐹ℎ or in general, record 𝐹 as any
+alteration of 𝐸 such that 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 = 1, while 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 0.
+Without loss of generality, we have that 𝑒𝑥ℎ ∈ 𝑇 (𝐸) ∪ 𝑇 (𝐹 ). Note that 𝑒𝑥ℎ
+belongs to 𝑇 (𝐹 ) ⧵ 𝑇 (𝐸) when it is a fake event in 𝐹 .
+
+4. Impossibility and possibility results
+
+Definition 5. The causality determination problem 𝐶𝐷(𝐸, 𝐹 , 𝑒∗𝑖 ) for
+any event 𝑒∗𝑖 ∈ 𝑇 (𝐸) at a correct process 𝑝𝑖 is to devise an algorithm to
+collect the execution history 𝐸 as 𝐹 at 𝑝𝑖 such that 𝑣𝑎𝑙𝑖𝑑(𝐹 ) = 1, where
+{
+1 if ∀𝑒𝑥ℎ , 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹
+𝑣𝑎𝑙𝑖𝑑(𝐹 ) =
+0 otherwise
+
+4.1. Two basic results
+Theorem 1. It is impossible to prevent false negatives in solving the causality determination problem (Definition 5) as specified by CD(𝐸, 𝐹 , 𝑒∗𝑖 ) in
+an asynchronous unicast/multicast/broadcast-based message passing system
+with one or more Byzantine processes.
+
+When 1 is returned, the algorithm output matches God’s truth and
+solves CD correctly. Thus, returning 1 indicates that the problem has
+been solved correctly by the algorithm using 𝐹 . 0 is returned if one of
+the following two cases holds.
+
+Proof. In the determination of 𝑒𝑥ℎ → 𝑒∗𝑖 , a false negative may arise
+when a send-receive event pair (𝑒𝑢𝑓 , 𝑒𝑣𝑔 ) in a causal chain from 𝑒𝑥ℎ to
+𝑒∗𝑖 is missing as per 𝐹 . The causal chain has the following subsequence:
+′
+′
+′
+⟨⋯ 𝑒𝑢𝑓 , 𝑒𝑣𝑔 , 𝑒𝑣𝑔 ⋯⟩, where 𝑒𝑣𝑔 is a send event at 𝑝𝑔 . Both 𝑒𝑣𝑔 and 𝑒𝑣𝑔 are local
+to 𝑝𝑔 . A Byzantine 𝑝𝑔 can suppress letting the rest of the system know
+′
+of the occurrence of 𝑒𝑣𝑔 or swap the order of occurrence of 𝑒𝑣𝑔 and 𝑒𝑣𝑔
+in what it lets the rest of the system know about the occurrence of the
+two local events. Both actions have the effect of breaking the causality
+chain from 𝑒𝑥ℎ to 𝑒∗𝑖 which can give rise to a false negative. □
+
+• ∃𝑒𝑥ℎ such that 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 1 ∧ 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 = 0 (denoting a false
+negative, abbreviated 𝐹 𝑁).
+• ∃𝑒𝑥ℎ such that 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 0 ∧ 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 = 1 (denoting a false
+positive, abbreviated 𝐹 𝑃 ).
+In order to determine whether CD is solved correctly, we have to
+evaluate ∀𝑒𝑥ℎ , 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 even if 𝑒𝑥ℎ ∈ (𝑇 (𝐸) ∪ 𝑇 (𝐹 )) ⧵ 𝑇 (𝐸)
+because such an 𝑒𝑥ℎ is recorded by the algorithm as part of 𝐹 . We make
+the following crucial observation: in CD, a single Byzantine process 𝑝𝑏
+can cause 𝐹 (as recorded by the algorithm) to be different from 𝐸.
+This is not just a mismatch between 𝐸𝑏 and 𝐹𝑏 at 𝑝𝑏 but also at other
+processes, and also a mismatch between other 𝐸𝑎 and 𝐹𝑎 at processes
+𝑝𝑐 , by contaminating 𝐹𝑏 and/or 𝐹𝑎 via direct and transitive message
+passing (across different messages) originated at or passing through 𝑝𝑏 .
+
+Another reason why false negatives cannot be prevented is that a
+Byzantine process pair may collude in performing out-of-band communication with each other. Such an out-of-band send-receive event pair
+(𝑒𝑢𝑓 , 𝑒𝑣𝑔 ) does establish a causal chain from 𝑒𝑥ℎ to 𝑒∗𝑖 by the composition
+of 𝑒𝑥ℎ → 𝑒𝑢𝑓 , 𝑒𝑢𝑓 → 𝑒𝑣𝑔 , and 𝑒𝑣𝑔 → 𝑒∗𝑖 , that is missing as per 𝐹 because
+𝑒𝑢𝑓 → 𝑒𝑣𝑔 is not recorded by the algorithm — it is not detectable outside
+the subsystem of the Byzantine processes if they choose not to disclose
+it.
+We also have the following result about internal events at a process.
+
+• A FN arises because a send-receive event pair (𝑒𝑢𝑓 , 𝑒𝑣𝑔 ) of 𝐸 in a
+causal chain from 𝑒𝑥ℎ to 𝑒∗𝑖 is missing as per 𝐹 . In addition, a FN
+may arise if 𝑒𝑥ℎ ∈ 𝑇 (𝐸) ⧵ 𝑇 (𝐹 ).
+
+Theorem 2. For an internal event 𝑒𝑥ℎ , it is impossible to prevent false
+negatives or false positives in determining 𝑒𝑥ℎ → 𝑒∗𝑖 at a correct process 𝑝𝑖
+in an asynchronous message passing system with one or more Byzantine
+processes.
+
+• A FP arises because a non-existent send-receive message pair
+(𝑒𝑢𝑓 , 𝑒𝑣𝑔 ) in 𝐸 appears in a causal chain from 𝑒𝑥ℎ to 𝑒∗𝑖 as per 𝐹 .
+In addition, a FP may arise if 𝑒𝑥ℎ ∈ 𝑇 (𝐹 ) ⧵ 𝑇 (𝐸).
+
+Proof. There may be no other event in the rest of the system to corroborate the occurrence of an internal event at a process. A Byzantine
+process 𝑝ℎ can choose to not reveal about an internal event 𝑒𝑥ℎ to the
+rest of the system, leading to a false negative that cannot be prevented.
+It may also choose to add a fake internal event 𝑒𝑥ℎ in what it reveals
+to the rest of the system, leading to a false positive that cannot be
+prevented. □
+
+Byzantine processes are an integral part of the system. The occurrence of an event at such a process, and its correct order with respect to
+other events locally, matters to correct processes because it can impact
+the causality relation among events at correct processes. Let 𝑝𝑐1 and 𝑝𝑐2
+be correct processes and let 𝑝𝑏 be a Byzantine process. Let message 𝑚1
+sent at 𝑒_𝑠𝑐1 be received at 𝑒_𝑟𝑏 . Let message 𝑚2 sent at 𝑒_𝑠𝑏 be received
+at 𝑒_𝑟𝑐2 . Consider the following scenarios.
+4
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+In light of Theorem 2, we implicitly prove our impossibility or
+possibility results on the CD problem considering only send and receive
+events in 𝐸 and 𝐹 .
+
+Solving Black_Box at 𝑝𝑖 requires identifying the set of correct processes and solving 𝐶𝐷. In order for any algorithm to correctly solve
+CD (Definition 5), it must ensure that the collected execution history
+𝐹 (containing execution histories of potentially Byzantine processes)
+matches 𝐸, and this requires identifying all Byzantine processes as we
+prove next. From this it will follow that Black_Box ⪯ CD.
+For 𝐹 to match 𝐸, the following must hold.
+
+4.2. Results for ‘‘happened before’’
+A main contribution in our results is relating the causality determination problem to the well-known Consensus problem [29,30]. In the
+Consensus problem, each process has an initial value and all correct
+processes must agree on a single value. The solution needs to satisfy
+the following three conditions.1
+
+• (Managing false positives:) A Byzantine process may attempt to
+insert a fake entry in 𝐹ℎ (based on a fake send-receive event
+pair) and contaminate the reporting of histories in 𝐹 , leading
+to a false positive. Therefore, there needs to be a mechanism
+to prevent contamination of 𝐹 or filter out the malicious entries from 𝐹 within bounded time. However, due to unicasting,
+message privacy needs to be maintained. Note that we are not
+considering the use of cryptography. Hence a message send event
+in 𝐹ℎ from a potentially Byzantine 𝑝ℎ to a potentially Byzantine 𝑝𝑔
+cannot be verified within bounded time by other processes while
+collecting the reported execution history as the message itself
+cannot be broadcast or communicated to any process other than
+𝑝𝑔 to maintain its privacy. No bound on the time period exists
+because 𝑝ℎ may be Byzantine and because there is no upper bound
+on the message latency. (After event 𝑒∗𝑖 , process 𝑝𝑖 can try to
+verify with 𝑝ℎ whether the entry in 𝐹ℎ is genuine or fake but this
+may not conclude in bounded time; if treated as genuine, a fake
+send-receive event pair introduces a false positive and if treated
+as fake, a genuine send-receive event pair introduces a false
+negative. Furthermore, if both 𝑝ℎ and 𝑝𝑔 are Byzantine, a fake
+event in 𝐹ℎ can appear as genuine to 𝑝𝑖 despite any verification
+attempts.) Therefore identification of Byzantine processes, their
+actual execution histories, and causal chains from and through
+them is required.
+• (Managing false negatives:) Consider a message 𝑚 sent at 𝑒𝑥ℎ from
+𝑝ℎ to 𝑝𝑔 in 𝐸ℎ . During the collection of 𝐸ℎ to 𝑝𝑖 for reporting 𝐹ℎ ,
+Byzantine processes may delete information about 𝑒𝑥ℎ and 𝑚 from
+𝐹ℎ , leading to a false negative when 𝑒𝑥ℎ → 𝑒∗𝑖 . Further by Theorem
+1, a false negative may occur if the receive event of 𝑚 by 𝑝𝑔 is
+not disclosed to the rest of the system by a Byzantine 𝑝𝑔 or if
+the receive event is swapped after a subsequent send event by 𝑝𝑔
+that is part of the causality chain 𝑒𝑥ℎ → 𝑒∗𝑖 , in what 𝑝𝑔 discloses
+to the rest of the system thereby breaking the causality chain of
+𝐸 in 𝐹 . Therefore, either deletion of information from 𝐸 in 𝐹 or
+alteration of 𝐸 in 𝐹 has to be prevented, or such deletions and
+alterations from 𝐸 when presented with 𝐹 have to be recognized
+within bounded time. This requires identification of the Byzantine
+processes, their actual execution histories, and causal chains from
+and through them.
+
+• Agreement: All non-faulty processes must agree on the same
+single value.
+• Validity: If all non-faulty processes have the same initial value,
+then the agreed-on value by all the non-faulty processes must be
+that same value.
+• Termination: Each non-faulty process must eventually decide on
+a value.
+According to the FLP impossibility result [35], it is impossible to solve
+Consensus in an asynchronous message-passing system with even a
+single crash failure prone process. We show a reduction from Consensus
+to CD in Byzantine systems to prove the impossibility of solving CD in
+a system with Byzantine failures. This proves that CD is at least as hard
+as Consensus in Byzantine systems. Of related but orthogonal interest,
+we also later show that CD does not reduce to Consensus in a Byzantine
+system, i.e., a solution to Consensus cannot be used to solve CD in such
+a system, thus establishing that CD is harder to solve than Consensus.
+Theorem 3. It is impossible to solve causality determination (Definition
+5) as specified by CD(𝐸, 𝐹 , 𝑒∗𝑖 ) in an asynchronous unicast-based message
+passing system with one or more Byzantine processes.
+Proof. We prove the impossibility of solving the CD problem in two
+steps.
+1. We give a reduction (denoted ⪯) from Black_Box to CD, where
+Black_Box is defined below.
+2. We also give a reduction from the Consensus problem (which
+by the FLP result [35] is unsolvable in the presence of a single
+Byzantine process) to the Black_Box problem.
+We then transitively compose these two reductions. In more detail, after
+showing how Consensus can be solved by invoking a black box that
+solves Black_Box, and how Black_Box can be solved by solving CD, we
+argue as follows. If CD were solvable, Black_Box would be solvable, and
+then Consensus would also be solvable; however, that contradicts the
+unsolvability of Consensus. Therefore, there cannot exist any algorithm
+to solve CD.
+The definition of the Black_Box problem is as follows.
+Black_Box(𝑉 , 𝐸, 𝐹 , 𝑒∗𝑖 ) executed at 𝑝𝑖 takes as input a vector 𝑉 of initial
+boolean values, one per process, 𝐸, 𝐹 , and local event 𝑒∗𝑖 at a process
+𝑝𝑖 . Black_Box invoked at 𝑝𝑖 acts as follows. The correct process 𝑝𝑖
+broadcasts the value 𝑤 where:
+⎧0
+⎪
+𝑤 = ⎨1
+⎪𝐶𝐷(𝐸, 𝐹 , 𝑒∗ )
+𝑖
+⎩
+
+If there were an algorithm to make 𝐹 match 𝐸, it requires identifying
+whether each of the processes that input their execution histories is correct
+or Byzantine, and tracing and dealing with/resolving the impact of contamination via message passing by the Byzantine processes from and through
+those Byzantine processes on the execution histories of processes at other
+processes. Thus, Black_Box ⪯ CD.
+Now we give the reduction from Consensus to Black_Box. To solve
+Consensus(𝑉 ) at (a correct process) 𝑝𝑖 , we invoke Black_Box(𝑉 , 𝐸, 𝐹 , 𝑒∗𝑖 )
+locally (and likewise to solve Consensus(𝑉 ) at (each process) 𝑝𝑗 , invoke Black_Box(𝑉 , 𝐸, 𝐹 , 𝑒∗𝑗 ) at each 𝑝𝑗 ). Each correct process computes
+min(𝐿) from the locally returned list 𝐿 and outputs as its consensus
+value the broadcast value that it receives from 𝑝min(𝐿) and terminates.
+The conditions of Consensus – Agreement, Validity, and Termination –
+can be seen to be satisfied. So Consensus ⪯ Black_Box.
+If CD is (correctly) solvable, it returns 1 for ∀𝑒𝑥ℎ , 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 𝑒𝑥ℎ →
+𝑒∗𝑖 |𝐹 , (and implicitly for all 𝑒∗𝑖 ). This gives:
+
+if each correct 𝑝𝑗 has 𝑉 [𝑗] = 0
+if each correct 𝑝𝑗 has 𝑉 [𝑗] = 1
+otherwise
+
+and locally returns 𝐿, a list of ids of correct processes. Solving Black_Box
+requires identifying the set of correct processes; we do not claim
+Black_Box is solvable.
+
+1
+In some literature, Conservation, which requires the sum of the initial
+values to equal the sum of the final values, is co-specified [34]. However, in
+general Consensus is independent of Conservation.
+
+𝐶𝑜𝑛𝑠𝑒𝑛𝑠𝑢𝑠 ⪯ 𝐵𝑙𝑎𝑐𝑘_𝐵𝑜𝑥 ⪯ 𝐶𝐷.
+5
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+the causality chain 𝑒𝑥ℎ → 𝑒∗𝑖 , in what 𝑝𝑔 discloses to the rest of the
+system thereby breaking the causality chain of 𝐸 in 𝐹 . To prevent
+such false negatives, Byzantine processes, their actual execution
+histories, and causal chains from and through such processes need
+to be identified.
+Note that in the bullet above regarding prevention of false positives, if 𝑚 is not delivered to 𝑝𝑔 within the time to report 𝐹 , the
+entry about sending of 𝑚 is not added to 𝐹ℎ even though 𝑚 might
+have been sent. However the message 𝑚′ carrying information
+about sending of 𝑚 is considered received/delivered, and hence
+𝑒𝑥ℎ → 𝑒∗𝑖 . So this scenario contributes to a false negative.
+
+Transitivity of reductions implies that if the CD problem is solvable,
+then Consensus is also solvable. However, that contradicts the FLP
+impossibility result [35] when applied to a Byzantine system, hence
+CD cannot be solvable. □
+When the communication pattern is by broadcasts, the proof analyzing the CD problem uses Byzantine Reliable Broadcast (BRB) [36,37]
+as a layer beneath the broadcast invocation. Without loss of generality,
+this proof considers the strongest form of broadcast that gives the
+highest resilience to Byzantine behavior, namely BRB. BRB requires
+that the number of Byzantine processes 𝑡 be such that 𝑛 > 3𝑡. BRB
+is an instantiation of Definition 4 having 𝐺 = 𝑃 and without the No
+Information Leakage Property, and satisfies the following properties.
+
+Thus, to solve CD, it is necessary to identify Byzantine processes, their
+actual execution histories, and causal chains from and through them. So
+we have Black_Box ⪯ CD and, as Consensus ⪯ Black_Box, hence Consensus
+⪯ CD. As Consensus is unsolvable in a system with Byzantine processes,
+CD is also unsolvable. □
+
+• Validity: If a correct process delivers a message 𝑚 from a correct
+process 𝑝𝑠 , then 𝑝𝑠 must have executed broadcast(𝑚).
+• Self-delivery: If a correct process executes broadcast(𝑚), then it
+eventually executes deliver(𝑚).
+• Integrity: For any message 𝑚, a correct process executes
+deliver(𝑚) at most once.
+• Reliability (or Termination): If a correct process executes
+deliver(𝑚), then every other correct process also (eventually)
+executes deliver(𝑚).
+
+When processes communicate by multicasting, each send event
+sends a message to a group 𝐺 consisting of processes in a subset of
+𝑃 . Different send events can send to different subsets of processes in 𝑃 .
+The number of possible groups is 2|𝑃 | − 1. Communicating via unicasts
+and communicating via broadcasts are special cases of multicasting.
+
+Theorem 4. It is impossible to solve causality determination (Definition
+5) as specified by CD(𝐸, 𝐹 , 𝑒∗𝑖 ) in an asynchronous broadcast-based message
+passing system with one or more Byzantine processes.
+
+Theorem 5. It is impossible to solve causality determination (Definition
+5) as specified by CD(𝐸, 𝐹 , 𝑒∗𝑖 ) in an asynchronous multicast-based message
+passing system with one or more Byzantine processes.
+
+Proof. The overall structure of the proof is along the lines of that for
+Theorem 3. We outline the logic that CD (Definition 5) cannot be solved
+for when the underlying send events are broadcasts. Specifically, we
+show that 𝐹 cannot be made to match 𝐸.
+
+Proof. Unicast mode of communication is a special case of multicast
+where each group is of size 1 (or 2 if the sender is included in the
+multicast group). Theorem 3 proved that causality determination in the
+presence of even a single Byzantine process under unicast communication is impossible to solve. As the special case of group size 1 (or 2) is
+not solvable, the general case of multicast is also not solvable. □
+
+• (Managing false positives:) By doing broadcasts using the Byzantine
+Reliable Broadcast (BRB) [36,37] layer, false positives can be
+prevented by ensuring no fake events/ causal dependencies are
+added to 𝐹 . Consider the case that a Byzantine process 𝑝𝑏 attempts
+to insert a fake entry about broadcast of 𝑚 by 𝑝ℎ in 𝐹ℎ (whether
+ℎ = 𝑏 or ℎ ≠ 𝑏) at a correct process 𝑝𝑔 via a message 𝑚′ sent to
+𝑝𝑔 . As broadcasts are sent over the underlying BRB, 𝑝𝑔 can verify
+whether or not this insertion is valid — based on the Reliability
+(or Termination) property of BRB, 𝑚 must get delivered by the
+BRB layer at all correct processes including 𝑝𝑔 if the insertion is
+valid. Only if 𝑚 is delivered to 𝑝𝑔 is authenticity of 𝑚 verified
+and the entry about 𝑚 can be inserted in 𝐹ℎ . Now in particular,
+𝑝𝑔 may be 𝑝𝑖 because it is correct. Therefore, correct processes
+including 𝑝𝑖 have a mechanism to prevent fake send events (and
+their corresponding fake receive events) from being inserted in 𝐹 ,
+ensuring no false positives.
+A fake receive event 𝑟ℎ for message 𝑚 cannot be inserted in 𝐹ℎ at
+𝑝𝑔 , using the mechanism outlined next. 𝑟ℎ is included as a causal
+dependency on the next broadcast by 𝑝ℎ and only on the receipt of
+such a broadcast by 𝑝𝑔 is 𝑝𝑔 allowed to include 𝑟ℎ in 𝐹ℎ at 𝑝𝑔 . This
+inclusion is done only if the send event of 𝑚 can be verified by 𝑝𝑔
+using BRB. 𝑝ℎ could learn of 𝑟ℎ by receiving 𝑚 (or information of
+𝑚 from a colluding Byzantine 𝑝𝑘 that has received 𝑚). If multiple
+identical 𝑟ℎ are reported to 𝑝𝑔 , the first is included in 𝐹ℎ .
+
+4.3. Results for ‘‘Byzantine happened before’’
+The CD problem (Definition 5) defined in terms of the → relation
+𝐵
+
+is now redefined in terms of the ←←←→
+← relation for the correctness criteria
+for causality determination.
+𝐵
+
+From Definition 3, we have that 𝑒 ←←←→
+← 𝑒′ is equivalent to (𝑒 → 𝑒′ ∧
+there is a causal path from event 𝑒 to event 𝑒′ going through correct processes
+𝐵
+
+𝐵
+
+𝐵
+
+in the execution). We define 𝑒 ←←←→
+← 𝑒′ |𝐸 and 𝑒 ←←←→
+← 𝑒′ |𝐹 as follows. 𝑒 ←←←→
+← 𝑒′ |𝐸
+is defined as (𝑒 → 𝑒′ |𝐸 ∧ there is a causal path from 𝑒 to 𝑒′ going through
+𝐵
+
+correct processes in the execution). 𝑒 ←←←→
+← 𝑒′ |𝐹 is defined as (𝑒 → 𝑒′ |𝐹 ∧
+there is a causal path from 𝑒 to 𝑒′ going through correct processes in the
+𝐵
+
+execution). Note that evaluating 𝑒 ←←←→
+← 𝑒′ |𝐹 does not involve determining
+whether there actually exists the causal path going through correct
+processes; also the process at which 𝑒′ occurs does not know that the
+process at which 𝑒 occurs is correct.
+Definition 6. The causality determination problem 𝐶𝐷_𝐵(𝐸, 𝐹 , 𝑒∗𝑖 ) for
+any event 𝑒∗𝑖 ∈ 𝑇 (𝐸) at a correct process 𝑝𝑖 is to devise an algorithm
+to collect the execution history 𝐸 as 𝐹 at 𝑝𝑖 such that 𝑣𝑎𝑙𝑖𝑑_𝐵(𝐹 ) = 1,
+where
+{
+𝐵
+𝐵
+𝑥 𝑥 ← 𝑒∗ | = 𝑒𝑥 ←←←→
+← 𝑒∗𝑖 |𝐹
+𝑖 𝐸
+ℎ
+𝑣𝑎𝑙𝑖𝑑_𝐵(𝐹 ) = 1 if ∀𝑒ℎ , 𝑒ℎ ←←←→
+0 otherwise
+
+• (Managing false negatives:) However, a Byzantine process 𝑝𝑔 can
+delete from 𝐹𝑔 information about a broadcast of 𝑚 by 𝑝ℎ at 𝑒𝑥ℎ
+that it has received, despite doing broadcasts using the BRB layer.
+Even if 𝑒𝑥ℎ → 𝑒∗𝑖 where the causality chain passes through a
+message broadcast event subsequently at 𝑝𝑔 after receiving 𝑚, 𝑝𝑖
+has no way of knowing about this chain or about the receive event
+of 𝑚 at 𝑝𝑔 if 𝑝𝑔 so chooses. Further by Theorem 1, a false negative
+may occur if the receive event of 𝑚 by 𝑝𝑔 is not disclosed to the
+rest of the system by a Byzantine 𝑝𝑔 or if the receive event is
+swapped after a subsequent broadcast event by 𝑝𝑔 that is part of
+
+The problem is solved correctly iff 1 is returned. Value 0 is returned
+if one of the following two cases holds.
+• ∃𝑒𝑥ℎ such that 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 1 ∧ 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 = 0 ∧ there exists a causal
+path from 𝑒𝑥ℎ to 𝑒∗𝑖 going through correct processes (denoting a false
+𝐵
+
+negative under ←←←→,
+← abbreviated 𝐹 𝑁𝐵 ).
+6
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+• ∃𝑒𝑥ℎ such that 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 = 0 ∧ 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 = 1 ∧ there exists a causal
+path from 𝑒𝑥ℎ to 𝑒∗𝑖 going through correct processes (denoting a false
+
+because knowing it requires identifying each process as being either
+Byzantine or non-Byzantine. All it can be used for is to guarantee that if
+
+positive under ←←←→,
+← abbreviated 𝐹 𝑃𝐵 ). This case cannot occur as
+the first and third terms cannot both be true. Hence 𝐹 𝑃𝐵 cannot
+occur.
+
+the ←←←→
+← relation holds, then it is possible to determine causality between
+the corresponding two events.
+
+𝐵
+
+𝐵
+
+Theorem 8. It is impossible to solve causality determination (Definition 6)
+Theorem 6.
+
+𝐵
+
+It is possible to solve causality determination (Definition 6)
+
+as specified by CD_B(𝐸, 𝐹 , 𝑒∗𝑖 ), now defined in terms of the ←←←→
+← relation, in
+an asynchronous multicast-based message passing system with one or more
+Byzantine processes.
+
+𝐵
+as specified by CD_B(𝐸, 𝐹 , 𝑒∗𝑖 ), now defined in terms of the ←←←→
+← relation, in
+
+an asynchronous unicast-based message passing system with one or more
+Byzantine processes.
+
+Proof. The properties of BRM cannot be satisfied without doing
+BRB within multicast group 𝐺, where 𝑡𝐺 < |𝐺|∕3 and 𝑡𝐺 is the
+number of Byzantine processes within group 𝐺. However to satisfy
+this condition for (multiple) groups implicitly requires identifying the
+Byzantine processes, which is not possible. Therefore, since BRM is
+impossible to achieve (without cryptography), detecting causality over
+Byzantine Reliable Multicast is also impossible to achieve. Hence we
+say technically that false positives and false negatives can occur under
+
+Proof. A process sends a unicast via a point-to-point message, satisfying the properties of BRU.
+• (Managing false positives:) Let each process 𝑝𝑗 be responsible for
+adding its local history in the 𝐹𝑗 at other processes. This can
+be achieved by doing a broadcast, simulated as point-to-point
+messages, after an application unicast send event, of control information about the application unicast send event’s ID and other
+local (internal and receive) events’ IDs since the previous such
+simulated broadcast. The local histories of the correct processes
+will be correctly recorded in 𝐹 at 𝑝𝑖 ; no Byzantine processes can
+cause deletion of or addition to this information. Thus, if there
+are no Byzantine processes along some causal path from 𝑒𝑥ℎ to
+
+𝐵
+
+←←←→,
+← even though, by definition, false positives cannot occur as discussed
+earlier.
+However, if a multicast is done via point-to-point messages, without
+satisfying BRM properties, then 𝐹 𝑃𝐵 and 𝐹 𝑁𝐵 can be prevented based
+on Theorem 6. □
+
+𝐵
+
+𝑒∗𝑖 , 𝑒𝑥ℎ ←←←→
+← 𝑒∗𝑖 will be correctly detected at 𝑝𝑖 . Thus, false positives
+
+Section 4.3.2 gives an algorithm for 𝐹 𝑃𝐵 and 𝐹 𝑁𝐵 for unicasts
+satisfying BRU and for multicasts without satisfying BRM.
+
+𝐵
+
+under ←←←→
+← can be prevented and hence 𝐹 𝑃𝐵 .
+• (Managing false negatives:) Consider a message 𝑚 from correct
+process 𝑝ℎ to 𝑝𝑔 sent at 𝑒𝑥ℎ in 𝐸ℎ . During the collection of 𝐸ℎ
+to 𝑝𝑖 for reporting 𝐹ℎ , if there are no Byzantine processes along
+some causal path from 𝑒𝑥ℎ to 𝑒∗𝑖 , it is possible to ensure by faithful
+propagation of causal dependency information along that path
+that no Byzantine processes can cause deletion of information
+about 𝑒𝑥ℎ from 𝐹ℎ or about other events in 𝐹 that can negate
+𝐵
+
+4.3.1. Algorithm outline for CD_B of Byzantine happened before under
+broadcasts
+Each process 𝑝𝑖 maintains 𝐹𝑧 (∀𝑧) in which it tracks 𝑝𝑧 ’s execution
+history. The goal is to make 𝐹𝑧 match 𝐸𝑧 for correct 𝑝𝑧 , at each 𝑝𝑖 .
+𝐵
+
+• Byzantine Causal Broadcast (BCB) [22] defined using the ←←←→
+← relation on messages sent by correct processes [23,25,28], is run over
+Byzantine Reliable Broadcast (BRB) [36,37]. The 𝑎th broadcast
+by 𝑝𝑖 of message 𝑚 is denoted (𝑚, 𝑖, 𝑎) and is done by invoking
+BCB(𝑚, 𝑖, 𝑎, 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡) where 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡 is the local incremental history
+since its last broadcast (𝑎 − 1). For the delivery event of a message
+𝑚′ in 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡, 𝑝𝑖 also includes entry (𝑚′ , 𝑗, 𝑏), where 𝑚′ was delivered locally by the BCB layer at 𝑝𝑖 and it was the 𝑏th broadcast
+by 𝑝𝑗 .
+
+𝐵
+
+𝑒𝑥ℎ ←←←→
+← 𝑒∗𝑖 . Thus, false negatives under ←←←→
+← can be prevented and
+hence 𝐹 𝑁𝐵 .
+The theorem follows.
+Theorem 7.
+
+□
+
+It is possible to solve causality determination (Definition 6)
+𝐵
+
+as specified by CD_B(𝐸, 𝐹 , 𝑒∗𝑖 ), now defined in terms of the ←←←→
+← relation, in
+an asynchronous broadcast-based message passing system with one or more
+Byzantine processes.
+
+• When 𝑝𝑘 BCB-delivers message (𝑚, 𝑖, 𝑎, 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡), 𝑝𝑘 verifies
+whether each (𝑚′ , 𝑗, 𝑏) corresponding to a delivery event in the
+received 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡 has already been locally BCB-delivered. It should
+have been delivered by the causal order property of the BCB layer
+via a previously executed BCB-deliver, if it is not a fake entry in
+𝑖𝑛𝑐_ℎ𝑖𝑠𝑡; if it has not been BCB-delivered locally, 𝑝𝑖 is a Byzantine
+process trying to enter a fake entry (about a receive event of
+message (𝑚′ , 𝑗, 𝑏)) which is to be ignored. This prevents false
+positives. (Any event executed by a Byzantine 𝑝𝑖 can be ignored
+
+Proof. The proof structure is similar to that of Theorems 4, 6. Similar
+to Theorem 4, we assume that a broadcast is sent via BRB. We outline
+𝐵
+
+the logic that CD_B (Definition 6 with → replaced by ←←←→)
+← can be solved
+when the underlying send events are broadcasts.
+• (Managing false positives:) False positives cannot occur. Same reasoning as in the first bullet in Theorem 4 (thus 𝐹 𝑃 holds and it
+implies 𝐹 𝑃𝐵 ) or similar to that in the first bullet of Theorem 6.
+In fact, by the second bullet after Definition 6, 𝐹 𝑃𝐵 .
+• (Managing false negatives:) False negatives cannot occur. Similar
+reasoning as in the second bullet of Theorem 6. Let a message 𝑚
+be broadcast at 𝑒𝑥ℎ . During the collection of 𝐸ℎ to 𝑝𝑖 for reporting
+
+𝐵
+
+because it is not considered by the definition of ←←←→.)
+←
+For each
+(𝑚′ , 𝑗, 𝑏) that has been BCB-delivered locally the corresponding
+receive/deliver event at 𝑝𝑖 and internal events at 𝑝𝑖 up to the send
+event for (𝑚, 𝑖, 𝑎) in 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡 at 𝑝𝑖 and the send event for (𝑚, 𝑖, 𝑎) are
+inserted in 𝐹𝑖 at 𝑝𝑘 . Note that the BCB layer delivers a message
+(𝑚, 𝑖, 𝑎, 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡) only when all the causal dependencies in its causal
+barrier have been BCB-delivered (as they must be delivered by the
+BRB layer at 𝑝𝑘 if they are not fake) but 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡 sent by 𝑝𝑖 may
+contain a fake entry about an older delivery event for (𝑚′ , 𝑗, 𝑏) that
+has dropped out of the causal barrier [22]. Hence this verification
+by 𝑝𝑘 is done.
+
+𝐵
+
+𝐹ℎ , if 𝑒𝑥ℎ ←←←→
+← 𝑒∗𝑖 there are no Byzantine processes along some causal
+path from 𝑒𝑥ℎ to 𝑒∗𝑖 , hence it is possible to ensure that no Byzantine
+process can cause deletion of information of 𝑒𝑥ℎ from 𝐹ℎ or of other
+𝐵
+
+events in 𝐹 that can negate 𝑒𝑥ℎ ←←←→
+← 𝑒∗𝑖 . Both 𝐹 𝑁𝐵 and 𝐹 𝑁 hold.
+
+□
+
+It follows that to solve CD_B under unicasts and broadcasts, it is not
+necessary to identify whether each process is Byzantine. As a result,
+Black_Box  CD_B and hence Consensus  CD_B.
+Although Theorems 6, 7 are positive results, in practice it is not
+
+𝐵
+
+• False negatives while determining 𝑒𝑥ℎ ←←←→
+← 𝑒∗𝑖 at 𝑝𝑖 cannot occur as
+Byzantine processes cannot modify/delete events from the causal
+histories reported by correct processes via broadcasting.
+
+𝐵
+
+possible to know whether the ←←←→
+← relation holds between 𝑒𝑥ℎ and 𝑒∗𝑖
+7
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+The above logic can be seen to be correct due to the properties of
+the BRB layer, on top of which the BCB layer is run and invoked while
+doing an application-layer broadcast. We now have that for a correct
+process 𝑝𝑖 :
+
+encrypted by a group key other than that for 𝐺 (by a Byzantine
+sender 𝑝ℎ ) and hence the decrypted 𝑚 is garbage, a correct 𝑝𝑏
+ignores it, but a Byzantine 𝑝𝑏 may still include the send event
+of 𝑚 (i.e., of 𝐶𝑚 ) on a later message 𝑚′ (i.e., 𝐶𝑚′ ) it sends. We
+treat the dependency of 𝐶𝑚 preceding 𝐶𝑚′ at 𝑝𝑏 as valid or true
+if we ignore the semantics of the content of 𝑚 which is private
+to the sender 𝑝ℎ of 𝑚 and members of 𝐺. (If the semantics of the
+message matters, this is a fake dependency being introduced by
+𝑝𝑏 .) This dependency is never valid and a non-Byzantine 𝑝𝑏 will
+never include this dependency.
+2. 𝑝𝑏 ∉ 𝐺: (a) If 𝑝𝑏 is correct, there is no receive event at the
+application and 𝑝𝑏 does not include the send event of 𝐶𝑚 on any
+later message. (b) A Byzantine 𝑝𝑏 may include the send event of
+𝐶𝑚 on a later message 𝑚′ it sends in order to introduce a fake
+causal dependency of 𝐶𝑚 preceding 𝐶𝑚′ but as other (correct)
+processes learn via the BRB of (𝐺, 𝐶𝑚 ) that 𝑝𝑏 ∉ 𝐺, they will not
+be tricked into adding this fake dependency of 𝐶𝑚 before 𝐶𝑚′ . (c)
+If both sender 𝑝ℎ and receiver 𝑝𝑏 are Byzantine and 𝑝ℎ shared
+the group key with 𝑝𝑏 even though 𝑝𝑏 ∉ 𝐺, 𝐶𝑚 is decryptable
+by 𝑝𝑏 and there is a dependency from 𝑝ℎ to 𝑝𝑏 . As 𝑝𝑏 ∉ 𝐺,
+no other correct process will be able to verify this dependency,
+resulting in a false negative. The dependency and the resulting
+false negative is due to out-of-band communication.
+
+𝐵
+
+𝑒𝑥ℎ ←←←→
+← 𝑒∗𝑖 ⟺ 𝑒𝑥ℎ exists in 𝐹ℎ at 𝑝𝑖 .
+Additionally, 𝑒𝑥ℎ in 𝐹ℎ at 𝑝𝑖 implies 𝑒𝑥ℎ → 𝑒∗𝑖 when 𝑒𝑥ℎ is a send or
+receive event. This is because a Byzantine process 𝑝𝑏 cannot insert fake
+send and receive events 𝑒𝑦𝑏 in 𝐹𝑏 at a correct process 𝑝𝑖 (follows from
+Theorem 4). Note that a Byzantine process can delete an actual internal
+event as well as insert a fake internal event (follows from Theorem 2).
+4.3.2. Algorithm outline for CD_B of Byzantine happened before under
+unicasts (and under multicasts without satisfying BRM)
+Unicasts are sent point-to-point, satisfying BRU. (Multicasts are sent
+point-to-point without satisfying BRM.) After sending the unicast/multicast, the sender does BCB(𝑒𝑥ℎ _𝑖𝑑, 𝑖, 𝑎, 𝐺, 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡) over BRB of control
+information only. The BCB over BRB is like in Section 4.3.1; however
+(a) the event identifier 𝑒𝑥ℎ _𝑖𝑑 of the send event is used instead of the
+message 𝑚 that was sent via BRB to 𝐺, (b) 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡 also specifies event
+identifiers, not actual events or messages, and (c) for the receive event
+ID 𝑒𝑧𝑖 _𝑖𝑑 in 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡, the event ID of the corresponding send event 𝑒𝑤
+𝑗 is
+𝑥
+used as (𝑒𝑤
+𝑗 _𝑖𝑑, 𝑗, 𝑏). On BCB-delivery of (𝑒ℎ _𝑖𝑑, 𝑖, 𝑎, 𝐺, 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡) at 𝑝𝑘 , 𝑝𝑘
+inserts 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡 in 𝐹𝑖 at 𝑝𝑘 ; each process 𝑝𝑖 is responsible for including
+its 𝑖𝑛𝑐_ℎ𝑖𝑠𝑡s in 𝐹𝑖 at each other process.
+
+Thus we have the following.
+• (Managing false positives:) By doing broadcasts using the Byzantine Reliable Broadcast (BRB) [36,37] layer, false positives can
+be prevented by ensuring no fake events are added to 𝐹 . If a
+Byzantine process 𝑝𝑏 attempts to insert a fake entry (𝑒𝑥ℎ , 𝐺, 𝐶𝑚 )
+about multicast send event of 𝑚 by 𝑝ℎ in 𝐹ℎ (whether ℎ = 𝑏 or
+ℎ ≠ 𝑏) at a correct process 𝑝𝑔 via a message (𝐺′ , 𝐶𝑚′ ) sent to 𝑝𝑔 ,
+𝑝𝑔 can verify whether or not this insertion is valid as based on
+the Reliability (or Termination) property of BRB, (𝐺, 𝐶𝑚 ) must be
+delivered by the BRB layer at all correct processes including 𝑝𝑔 .
+Only if (𝐺, 𝐶𝑚 ) is delivered to 𝑝𝑔 and 𝑝𝑏 ∈ 𝐺 is authenticity of 𝐶𝑚
+verified (similarly for other messages in the control information
+of (𝐺′ , 𝐶𝑚′ )).
+Once (𝐺′ , 𝐶𝑚′ ) is BRB delivered, the sequence of receive events
+like 𝑒𝑦𝑏 of (𝐺, 𝐶𝑚 ) (and other similar messages) at 𝑝𝑏 up to the
+send event of (𝐺′ , 𝐶𝑚′ ), whose authenticity is verified, and that
+send event of (𝐺′ , 𝐶𝑚′ ), can be inserted in 𝐹𝑏 . The entry about the
+send event of 𝑚 (that is, of 𝐶𝑚 , to 𝐺) would be inserted in 𝐹ℎ
+because/when 𝐶𝑚 is BRB delivered at 𝑝𝑔 (whether or not 𝑝𝑔 ∈ 𝐺).
+The receive event of (𝐺′ , 𝐶𝑚′ ) occurs and is added to 𝐹𝑔 only if
+𝑝𝑔 ∈ 𝐺′ . Now in particular, 𝑝𝑔 may be 𝑝𝑖 because it is correct.
+Therefore, correct processes including 𝑝𝑖 have a mechanism to
+prevent fake send events (and fake receive events) from being
+inserted in 𝐹 , ensuring no false positives.
+Note that there is no false positive only in the sense that the
+dependency of 𝐶𝑚 before 𝐶𝑚′ is valid and not fake, i.e., 𝐶𝑚 was
+sent to 𝑝𝑏 and was delivered to 𝑝𝑏 before 𝑝𝑏 sent 𝐶𝑚′ . However,
+a correct process 𝑝𝑔 can never know whether the content of 𝐶𝑚
+is decryptable by the group key 𝐾𝐺 and is semantically sound. If
+semantic validity is a requirement, then this dependency of 𝐶𝑚
+before 𝐶𝑚′ may be fake and false positives cannot be prevented
+even with cryptography.
+• (Managing false negatives:) Two types of false negatives can occur.
+
+𝐵
+
+If there exists a causal path 𝑒𝑥ℎ ←←←→
+← 𝑒∗𝑖 through correct processes, there
+𝐵
+
+will be no false positive under ←←←→
+← detected at 𝑝𝑖 . Similarly, there will be
+𝐵
+
+no false negative under ←←←→
+← as correct processes along the path would
+have caused the insertion of the actual local histories in 𝐹 at 𝑝𝑖 . Thus
+𝐹 𝑃𝐵 and 𝐹 𝑁𝐵 .
+If the BCB over BRB is replaced by a regular (point-to-point) broadcast, still 𝐹 𝑃𝐵 and 𝐹 𝑁𝐵 once the broadcasts by the correct processes
+are delivered; here 𝑡 < 𝑛 instead of 𝑡 < 𝑛∕3 as required by BRB.
+4.4. Results for ‘‘happened before’’ allowing cryptography
+4.4.1. Use of group encryption
+Theorem 9. It is impossible to solve causality determination (Definition
+5) as specified by CD(𝐸, 𝐹 , 𝑒∗𝑖 ) in an asynchronous multicast-based message
+passing system with one or more Byzantine processes even when using
+cryptography.
+Proof. The proof structure is similar to that for Theorem 3 but
+combines elements from Theorem 4. We outline the logic that CD
+(Definition 5) cannot be solved for when the underlying send events are
+multicasts. In particular, we show that the collected execution history
+𝐹 cannot be made to match 𝐸.
+A send-receive dependency induced by a multicast send event 𝑒𝑥ℎ by
+𝑝ℎ when it sends message 𝑚 to multicast group 𝐺 needs to be verified
+by other processes before insertion in 𝐹ℎ while not disclosing contents
+of 𝑚 to processes outside 𝐺 for confidentiality. So the ciphertext 𝐶𝑚 of
+𝑚 signed by the group key 𝐾𝐺 is created (to maintain confidentiality)
+and sent via Byzantine Reliable Broadcast (BRB) so that other processes
+can verify that the message was indeed sent. It is assumed that each
+multicast group shares a unique symmetric key for encryption and
+decryption of messages intended for processes in that group. (𝐺, 𝐶𝑚 ) are
+the parameters of a BRB broadcast. On arrival of (𝐺, 𝐶𝑚 ) at 𝑝𝑏 , there are
+2 cases.
+
+1. A Byzantine process 𝑝𝑔 can delete from 𝐹𝑔 information
+about a multicast of 𝑚 (i.e., of (𝐺, 𝐶𝑚 )) by 𝑝ℎ at 𝑒𝑥ℎ that
+it has received and such that 𝑝𝑔 ∈ 𝐺, despite doing
+broadcasts using the BRB layer. Even if 𝑒𝑥ℎ → 𝑒∗𝑖 where the
+causality chain passes through a message multicast event
+subsequently at 𝑝𝑔 after receiving 𝑚, 𝑝𝑖 has no way to know
+about this causality chain if 𝑝𝑔 chooses not to disclose it.
+Further by Theorem 1, a false negative may occur if the
+
+1. 𝑝𝑏 ∈ 𝐺: 𝑝𝑏 decrypts 𝐶𝑚 using the group key 𝐾𝐺 . (a) If the
+decrypted 𝑚 is valid (and 𝑝𝑏 is non-Byzantine), a receive event
+𝑒𝑦𝑏 occurs and 𝑝𝑏 can include the send event 𝑒𝑥ℎ and receive event
+𝑒𝑦𝑏 of 𝐶𝑚 (in the form of control information, ⟨𝑒𝑥ℎ , 𝑒𝑦𝑏 , (𝐺, 𝐶𝑚 )⟩) on
+the next message it sends to help build causal chains. (b) If 𝐶𝑚 is
+8
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+• hashes over fake events can lead to FPs,
+• hashes over a swapped order of (local) events can lead to FNs,
+and
+• hashes not taken/reported over actual events that occurred can
+lead to FNs,
+
+receive event of 𝑚, i.e., of (𝐺, 𝐶𝑚 ), by 𝑝𝑔 where 𝑝𝑔 ∈ 𝐺, is
+not disclosed to the rest of the system by a Byzantine 𝑝𝑔 or
+if the receive event is swapped after a subsequent multicast
+event by 𝑝𝑔 that is part of the causality chain 𝑒𝑥ℎ → 𝑒∗𝑖 , in
+what 𝑝𝑔 discloses to the rest of the system thereby breaking
+the causality chain of 𝐸 in 𝐹 .
+2. A false negative may occur due to out-of-band communication, one form of which is as follows. If both sender 𝑝ℎ and
+receiver 𝑝𝑏 are Byzantine and 𝑝ℎ shared the group key with
+𝑝𝑏 even though 𝑝𝑏 ∉ 𝐺, 𝐶𝑚 is decryptable by 𝑝𝑏 and there
+is a dependency from 𝑝ℎ to 𝑝𝑏 . As 𝑝𝑏 ∉ 𝐺, no other correct
+process will be able to verify this dependency, resulting in
+a false negative.
+
+because they corroborate 𝐹 and do not help to prevent contamination
+of 𝐹 or filter out malicious entries in 𝐹 .
+Consider the encoding of the causal past using recursive hash histories as follows. Let 𝐻 be a (cryptographic) collision-resistant hash
+function such that computationally it is not feasible to find 𝑦 such that
+𝐻(𝑦) = 𝐻(𝑥). Let 𝑠̂𝑥𝑖 denote the hash associated with state 𝑠𝑥𝑖 .
+• Initialize: 𝑠̂0𝑖 = 𝐻(⟨𝑠0𝑖 ⟩).
+• At internal event 𝑒𝑥𝑖 : 𝑠̂𝑥𝑖 = 𝐻(⟨𝑠̂𝑥−1
+, 𝑒𝑥𝑖 ⟩).
+𝑖
+• At send event 𝑒𝑥𝑖 of 𝑚 to 𝑝𝑗 :
+𝑠̂𝑥𝑖 = 𝐻(⟨𝑠̂𝑥−1
+, 𝑚⟩); send (𝑚, 𝑠̂𝑥𝑖 ) to 𝑝𝑗 .
+𝑖
+
+To prevent all such false negatives, Byzantine processes, their
+actual execution histories, and causal chains from and through
+such processes need to be identified.
+Note that in the bullet above regarding prevention of false positives, if 𝐶𝑚 is not delivered to 𝑝𝑔 within the time to report 𝐹 ,
+the entry about sending of 𝐶𝑚 is not added to 𝐹ℎ even though 𝐶𝑚
+might have been sent. However the message 𝐶𝑚′ carrying information about sending of 𝐶𝑚 is considered received/delivered, and
+hence 𝑒𝑥ℎ → 𝑒∗𝑖 . So this particular scenario contributes to a false
+negative.
+
+• At receive event 𝑒𝑥𝑖 of (𝑚, 𝑠̂𝑤
+𝑗 ) from 𝑝𝑗 :
+process 𝑚; 𝑠̂𝑥𝑖 = 𝐻(⟨𝑠̂𝑥−1
+, 𝑠̂𝑤
+𝑖
+𝑗 , 𝑚⟩).
+The second component 𝑠̂𝑥𝑖 sent with a message acts as a (recursive)
+proof. For a process 𝑝𝑔 to claim that it has received a message (sent at a
+send event 𝑒𝑥ℎ that did not occur) it has to create the proof that encodes
+the causal history (causal past) up to the supposed send event. This is
+checked against the proof of 𝑒𝑥ℎ that 𝑝ℎ provides and the hashes of the
+events in the causal past of 𝑒𝑥ℎ . The Byzantine processes can collude to
+create an alternate execution history/causal past that they have agreed
+on among themselves and executed, and corresponding event hashes
+and recursive hash histories that support the alternate reality of 𝑝𝑔 .
+If 𝑛 > 2𝑡, where 𝑡 is the upper bound on the number of Byzantine
+processes, such Byzantine behavior can be detected by taking a majority
+view. Thus such ensuing false positives can be prevented. However,
+false negatives will still occur because hashes taken over a swapped
+order of events and hashes not taken/reported over actual events that
+occurred, with a matching 𝐹 , break causal chains of 𝐸 in 𝐹 .
+
+Thus, to solve CD, it is necessary to identify Byzantine processes,
+their actual execution histories, and causal chains from and through
+them. Therefore Black_Box ⪯ CD and, as Consensus ⪯ Black_Box, hence
+Consensus ⪯ CD. As Consensus is unsolvable, CD is also unsolvable. □
+In the proof of Theorem 9, the number of Byzantine processes 𝑡 <
+𝑛∕3 due to BRB of Bracha [37].
+Theorem 10. It is impossible to solve causality determination (Definition
+5) as specified by CD(𝐸, 𝐹 , 𝑒∗𝑖 ) in an asynchronous unicast-based message
+passing system with one or more Byzantine processes even when using
+cryptography.
+
+4.5. Results for ‘‘Byzantine happened before’’ allowing cryptography
+Proof. The proof of Theorem 9 carries over identically where each
+multicast group consists of two processes — the sender and the receiver.
+False positives can be prevented only if the semantics of the message
+content of a message do not matter. Otherwise false positives cannot
+be prevented. False negatives cannot be prevented. □
+
+𝐵
+
+To detect 𝑒 ←←←→
+← 𝑒′ , from Theorems 6, 7, false positives and false negatives can be prevented for unicasts and broadcasts even without cryptography. For multicasts, from the proof of Theorem 9, Section 4.3.2,
+and the fact that there is a causal path through only correct processes
+from 𝑒 to 𝑒′ , only all true causal dependencies are faithfully transmitted
+and hence 𝐹 𝑁𝐵 and 𝐹 𝑃𝐵 . For 𝐹 𝑃𝐵 , note that semantic validity is also
+
+Theorem 11. It is impossible to solve causality determination (Definition
+5) as specified by CD(𝐸, 𝐹 , 𝑒∗𝑖 ) in an asynchronous broadcast-based message
+passing system with one or more Byzantine processes even when using
+cryptography.
+
+𝐵
+
+guaranteed when 𝑒 ←←←→
+← 𝑒′ . This gives the following results.
+Theorem 12.
+
+It is possible to solve causality determination (Definition
+𝐵
+
+6) as specified by CD_B(𝐸, 𝐹 , 𝑒∗𝑖 ), now defined in terms of the ←←←→
+← relation,
+in an asynchronous unicast-based message passing system with one or more
+Byzantine processes when using cryptography.
+
+Proof. The proof of Theorem 4 which is for broadcast mode of message
+passing without cryptography carries over mostly identically with the
+two observations that
+
+Theorem 13. It is possible to solve causality determination (Definition 6)
+
+1. (Managing false positives:) False positives can be prevented even
+without cryptography, and
+2. (Managing false negatives:) False negatives cannot be prevented
+due to Theorem 1 whose proof is independent of whether or not
+cryptography is used. □
+
+𝐵
+
+as specified by CD_B(𝐸, 𝐹 , 𝑒∗𝑖 ), now defined in terms of the ←←←→
+← relation, in
+an asynchronous broadcast-based message passing system with one or more
+Byzantine processes when using cryptography.
+Theorem 14. It is possible to solve causality determination (Definition 6)
+𝐵
+
+4.4.2. Use of recursive hash histories
+In an alternate cryptography-based approach, we can use event
+hashes, message hashes, and recursive hash histories (hash taken over
+the current event and the current state) [38–41] to provide a proof
+of the causal past in 𝐹 . However, solutions based on this approach
+conform to the results shown in Section 4.4.1. This is because the
+hashes reported by Byzantine processes and those reported by correct
+processes impacted by the Byzantine processes may be in conformity
+to the events, messages and execution histories reported in 𝐹 and not
+match 𝐸. In particular, while matching 𝐹 ,
+
+as specified by CD_B(𝐸, 𝐹 , 𝑒∗𝑖 ), now defined in terms of the ←←←→
+← relation, in
+an asynchronous multicast-based message passing system with one or more
+Byzantine processes when using cryptography.
+5. Auxiliary results on relationships of CD to other problems
+5.1. Relationship to consensus
+We show two auxiliary results about the relationship of CD to
+Consensus in this section. First, in asynchronous systems with Byzantine
+9
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+failures, we show that CD is harder than Consensus by (i) showing
+that even if Consensus were solvable, CD cannot be solved, i.e., 𝐶𝐷 
+𝐶𝑜𝑛𝑠𝑒𝑛𝑠𝑢𝑠, and (ii) combining with Theorems 3–5 and Theorems 9–11
+which showed that Consensus ⪯ 𝐶𝐷 under Byzantine failures. Second,
+we show that under crash failures in asynchronous systems, CD is
+solvable but Consensus is not solvable by the FLP result [35]; thus
+𝐶𝑜𝑛𝑠𝑒𝑛𝑠𝑢𝑠  𝐶𝐷 and 𝐶𝐷 ⪯ 𝐶𝑜𝑛𝑠𝑒𝑛𝑠𝑢𝑠.
+
+processes. However, solving Consensus in the crash failure model requires identifying the crashed processes in asynchronous systems —
+which is impossible by the FLP impossibility result [35]. Hence, solving Consensus is impossible while solving CD is possible under crash
+failures.
+It follows that Consensus  CD and CD ⪯ Consensus under crash
+failures. □
+
+Theorem 15. In an asynchronous system with Byzantine failures, 𝐶𝐷 
+𝐶𝑜𝑛𝑠𝑒𝑛𝑠𝑢𝑠 and the CD problem is harder than Consensus.
+
+5.2. Causal ordering of messages (CO)
+We consider the relationship of CD to the problem of causal ordering
+of messages CO.
+
+Proof. Let there exist an oracle accessible to each process that identifies each other process as being either correct or Byzantine. This allows
+each correct process to know the identity of all other correct processes.
+It now broadcasts its initial value of the Consensus problem and waits
+for the corresponding broadcasts from the set of other correct processes.
+After obtaining the initial values of all other correct processes, a correct
+process runs a local algorithm to decide on the consensus output — if
+the initial values are all the same, output that value, otherwise output
+a default value. This satisfies Agreement, Validity, and Termination
+clauses of Consensus. Thus, knowing the identities of all Byzantine
+processes, Consensus can be solved. The oracle is a sufficient condition
+to solve Consensus.
+Let us revisit the proof of Theorem 1. In the determination of 𝑒𝑥ℎ →
+𝑒∗𝑖 , a false negative may arise when a send-receive event pair (𝑒𝑢𝑓 , 𝑒𝑣𝑔 ) in
+a causal chain from 𝑒𝑥ℎ to 𝑒∗𝑖 is missing as per 𝐹 . The causal chain has
+′
+′
+the following subsequence: ⟨⋯ 𝑒𝑢𝑓 , 𝑒𝑣𝑔 , 𝑒𝑣𝑔 ⋯⟩, where 𝑒𝑣𝑔 is a send event
+′
+at 𝑝𝑔 . Both 𝑒𝑣𝑔 and 𝑒𝑣𝑔 are local to 𝑝𝑔 . A Byzantine 𝑝𝑔 can suppress letting
+the rest of the system know of the occurrence of 𝑒𝑣𝑔 or swap the order of
+′
+occurrence of 𝑒𝑣𝑔 and 𝑒𝑣𝑔 in what it lets the rest of the system know about
+the occurrence of the two local events. Both actions have the effect of
+breaking the causality chain from 𝑒𝑥ℎ to 𝑒∗𝑖 which can give rise to a false
+negative. With the oracle we assumed (a sufficient condition for solving
+Consensus), 𝑝𝑖 can know whether or not 𝑝𝑔 is Byzantine. Knowing that
+𝑝𝑔 is Byzantine when the causality chain is not detected by 𝑝𝑖 as per
+𝐹 does not help in knowing whether 𝑝𝑔 has broken the causality chain
+from 𝑒𝑥ℎ to 𝑒∗𝑖 , or whether the causality does not exist in 𝐸. Thus, a
+false negative can occur if 𝑝𝑖 infers from 𝐹 and this argument holds
+for unicasts, multicasts, and broadcasts. If 𝑝𝑖 wrongly guesses that the
+causality chain exists in 𝐸 but was broken by 𝑝𝑔 in 𝐹 and assumes the
+causality chain existed, then a false positive can occur. Also observe
+that if a causality chain does not exist in 𝐸 but is observed in 𝐹 , a false
+positive can occur. This argument holds for unicasts and multicasts but
+not for broadcasts. Refer to the results in Table 1 and Theorems 3, 4, 5.
+In whichever mode of communication, false negatives and possibly false
+positives can occur and therefore knowing the identity of the Byzantine
+processes does not help to solve CD. Thus CD  Consensus. Combining
+this with Theorems 3–5 and Theorems 9–11 that showed that Consensus
+⪯ 𝐶𝐷, it follows that CD is harder than Consensus. □
+
+Definition 7. The happened before relation → on (application-level)
+messages consists of the following rules:
+1. If 𝑝𝑖 sent or delivered message 𝑚 before sending message 𝑚′ , then
+𝑚 → 𝑚′ .
+2. If 𝑚 → 𝑚′ and 𝑚′ → 𝑚′′ , then 𝑚 → 𝑚′′ .
+Definition 8. The causal past of message 𝑚 is denoted as 𝐶𝑃 (𝑚) and
+defined as the set of messages that causally precede message 𝑚 under
+→.
+The CO problem is specified as follows.
+Definition 9. A causal ordering algorithm (for unicast/multicast/
+broadcast messages) must ensure the following:
+1. Strong Safety: ∀𝑚′ ∈ 𝐶𝑃 (𝑚) such that 𝑚′ and 𝑚 are sent to the
+same (correct) process, no correct process delivers 𝑚 before 𝑚′ .
+2. Liveness: Each message sent by a correct process to another
+correct process will be eventually delivered.
+When correct process 𝑝𝑟 receives 𝑚2 , it needs to correctly determine
+whether to deliver 𝑚2 before a message 𝑚1 or to wait for 𝑚1 before
+delivery of 𝑚2 . To formulate this, we rephrase the causal ordering
+problem (Definition 9) as CO(𝐸, 𝐹 , 𝑚2 ) as follows [23,25].
+Definition 10.
+The causal ordering problem 𝐶𝑂(𝐸, 𝐹 , 𝑚2 ) for a
+message 𝑚2 received by a correct process 𝑝𝑟 is to devise an algorithm to
+collect the execution history 𝐸 as 𝐹 at 𝑝𝑟 such that 𝐶𝑂_𝐷𝑒𝑙𝑖𝑣(𝑚2 ) = 1,
+where
+{
+1 if ∀𝑚1 , 𝑚1 → 𝑚2 |𝐸 = 𝑚1 → 𝑚2 |𝐹
+𝐶𝑂_𝐷𝑒𝑙𝑖𝑣(𝑚2 ) =
+0 otherwise
+𝐶𝑂_𝐷𝑒𝑙𝑖𝑣(𝑚2 ) returns 1 iff ∀𝑚1 , 𝑚1 → 𝑚2 |𝐸 = 𝑚1 → 𝑚2 |𝐹 . When 1 is
+returned, the algorithm output matches the actual truth and solves CO
+correctly. Thus, returning 1 indicates that the problem has been solved
+correctly by the algorithm using 𝐹 . 0 is returned if either
+1. ∃𝑚1 such that 𝑚1 → 𝑚2 |𝐸 = 1 and 𝑚1 → 𝑚2 |𝐹 = 0, denoting
+a strong safety violation because 𝑝𝑟 will not wait for 𝑚1 before
+delivery of 𝑚2 , or
+2. ∃𝑚1 such that 𝑚1 → 𝑚2 |𝐸 = 0 and 𝑚1 → 𝑚2 |𝐹 = 1, denoting a
+liveness violation because 𝑝𝑟 may continue waiting indefinitely
+for a fake 𝑚1 to arrive before delivering the arrived 𝑚2 .
+
+Theorem 16.
+In an asynchronous system with crash failures, CD is
+solvable but Consensus is not solvable; thus 𝐶𝑜𝑛𝑠𝑒𝑛𝑠𝑢𝑠  𝐶𝐷 and 𝐶𝐷 ⪯
+𝐶𝑜𝑛𝑠𝑒𝑛𝑠𝑢𝑠.
+Proof. To solve CD does not require identifying the crashed processes;
+their (correct) execution histories can be faithfully transmitted to other
+processes (transitively) via the execution messages sent in the execution
+history itself as it grows and be present at the other (correct) processes’
+execution histories and in in-transit messages. The execution histories
+of senders that might crash can transitively propagate beginning via
+messages they sent before their crash to other non-crashed processes.
+By this logic, for a process 𝑝ℎ that crashes, 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐹 is equal
+to 𝑒𝑥ℎ → 𝑒∗𝑖 |𝐸 for correct process 𝑝𝑖 . So it suffices to consider the
+execution histories 𝐸𝑗 of non-crashed processes (that include 𝑝𝑖 ) to
+determine 𝑒𝑥ℎ → 𝑒∗𝑖 and solve CD without having to identify the crashed
+
+Theorem 17. In an asynchronous system with Byzantine processes, 𝐶𝑂 ⪯
+𝐶𝐷 ∧ 𝐶𝐷 ⪯ 𝐶𝑂.
+Proof. We first show 𝐶𝑂 ⪯ 𝐶𝐷. For instance 𝐶𝑂(𝐸, 𝐹 , 𝑚2 ), let 𝑚2 be
+received at 𝑝𝑟 at event 𝑒∗𝑟 . Invoke 𝐶𝐷(𝐸, 𝐹 , 𝑒∗𝑟 ). If this can be solved,
+then it is straightforward to observe that 𝐶𝑂(𝐸, 𝐹 , 𝑚2 ) is solved as 𝑝𝑟
+now knows which non-fake messages 𝑚1 to wait for before delivering
+𝑚2 . Thus 𝐶𝑂 ⪯ 𝐶𝐷.
+Next we show 𝐶𝐷 ⪯ 𝐶𝑂. Consider instance 𝐶𝐷(𝐸, 𝐹 , 𝑒∗𝑖 ). Let
+ℎ
+
+𝑚2 (𝑗) (∀𝑗 ∈ 𝑃 ) be the most recent message received from 𝑝𝑗 at 𝑒𝑖 𝑗
+10
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+• Assumption: What the process in the library/TEE does is outside
+Byzantine influence (and reigns in/negates actions by Byzantine
+processes by forcing them to do exactly as the process in the
+library/TEE dictates or be ignored).
+
+at or before 𝑒∗𝑖 . If 𝐶𝑂(𝐸, 𝐹 , 𝑚) can be solved, all (𝑛 − 1) instances
+𝐶𝑂(𝐸, 𝐹 , 𝑚2 (𝑗)) can be solved. This implies that all (and only all) send
+ℎ
+and receive events causally preceding 𝑒𝑖 𝑗 and hence 𝑒∗𝑖 can be correctly
+identified. Thus there are no false negatives and no false positives, and
+𝐶𝐷(𝐸, 𝐹 , 𝑒∗𝑖 ) can be solved. Thus 𝐶𝐷 ⪯ 𝐶𝑂. □
+
+If the assumption can be justified one could trivially solve problems
+known to be unsolvable. For example,
+
+Theorem 18 ([42]). In a system with even one Byzantine process, the CO
+problem is subject to the same limitations (exposure to false positives and
+false negatives) as the CD problem, resulting in liveness and safety violations.
+
+• Claim: It is possible to solve BA deterministically, with Byzantine
+failures bounded at (𝑛 − 2).
+• Reasoning: The Validator is assumed to be reliable. Its backend executes in a TEE and can act as a correct process whose correctness
+is known to all processes. This Validator can receive the initial
+value from the initiator process and broadcast it to all processes,
+solving BA in 𝑂(1) time (2 message hops). Any values sent by
+processes that contradict (only Byzantine processes’ values may
+contradict) the values of the Validator are ignored.
+• Contradiction: This contradicts FLP impossibility [35] because BA
+cannot be solved deterministically in an asynchronous fault-prone
+system. It also contradicts the bound (a maximum of 𝑡 Byzantine
+processes in a system of at least 3𝑡 + 1 processes) for synchronous
+systems [30].
+• Conclusion: The assumption about a reliable Validator reduces a
+Byzantine-prone system into a sequential system with a reliable
+and centralized oracle — the Validator.
+
+Proof. Let 𝑒𝑥ℎ be a send event of a message 𝑚1 to 𝑝𝑖 , 𝑒𝑧𝑗 be an event
+where 𝑝𝑗 sends a message 𝑚2 to 𝑝𝑖 , 𝜙 be a predicate on when/whether
+𝑝𝑖 can safely deliver 𝑚2 sent at 𝑒𝑧𝑗 to itself (i.e., has received and
+determines it is safe to give 𝑚2 with respect to all other messages
+(like 𝑚1 ) sent to itself in the execution to the application), 𝑒𝑖𝑦̂ be an
+event where 𝑝𝑖 delivers the message 𝑚2 from 𝑝𝑗 , and → be defined on
+application messages.
+The formula 𝛷𝐶𝑂 (𝑒𝑖𝑦̂ ) needs to be satisfied in order to solve CO,
+where:
+⋀
+𝑑𝑒𝑓
+𝛷𝐶𝑂 (𝑒𝑖𝑦̂ ) =
+(𝑒𝑥ℎ → 𝑒𝑧𝑗 |𝐸 = 𝑒𝑥ℎ → 𝑒𝑧𝑗 |𝐹 ) ∧ 𝜙(𝑒𝑖𝑦̂ ).
+𝑒𝑥ℎ ∈𝐸 ∪ 𝐹
+
+As 𝑒𝑥ℎ is a send event, detecting 𝑒𝑥ℎ → 𝑒𝑧𝑗 is susceptible to false
+positives and/or false negatives (refer Table 1). Thus it cannot be
+guaranteed that the predicate 𝑒𝑥ℎ → 𝑒𝑧𝑗 |𝐸 = 𝑒𝑥ℎ → 𝑒𝑧𝑗 |𝐹 in the formula
+𝛷𝐶𝑂 can be satisfied. Hence, CO cannot be solved.
+A false positive of the CD problem can result in a liveness violation
+– waiting indefinitely at 𝑝𝑖 for the delivery of 𝑚2 until the prior delivery
+of 𝑚1 that was never sent by 𝑝ℎ – in the CO problem. A false negative
+of the CD problem is a safety violation – not waiting for the delivery
+of 𝑚1 that was sent by 𝑝ℎ at 𝑒𝑥ℎ to 𝑝𝑖 – in the CO problem. □
+
+Detecting causality between a pair of events is a fundamental problem [2]. Other problems that use this as a building block include the
+following:
+• detecting causality relation between two ‘‘meta-events’’ [44],
+each of which spans multiple events across multiple processes
+[45,46],
+• detecting the interaction type between a pair of intervals at
+different processes [47],
+• detecting the fine-grained modality of a distributed predicate
+[48–50], and data-stream based global event monitoring using
+pairwise interactions between processes [51].
+
+6. Discussion and conclusions
+We proved the results about possibility or impossibility of determining causality between events in the presence of Byzantine processes using executions, independent of specific implementations such
+as causality graphs, vector clocks and their variants, and other clock
+systems. The impossibility of being able to determine causal order
+between a pair of events under the → relation in the presence of even a
+single Byzantine process when message communication takes place by
+unicasting or by multicasting or by broadcasting are negative results.
+Only in the cases of unicasting and broadcasting can there be a weak
+positive result in that if there exists a causal path going through events
+
+Impossibility results analogous to the ones we have shown also hold for
+these problems. A reduction from CD to each of the above problems can
+be established; the impossibility of solving these above problems would
+directly follow.
+In light of the impossibility results in asynchronous systems, we
+showed that the CD problem can be solved in synchronous systems
+[52,53] using the replicated state machine (RSM) based approach
+[54]. As RSMs can be implemented deterministically even in partially
+synchronous systems, the solvability of CD also extends to such systems.
+Based on the impossibility of solving CD in asynchronous systems, several other Byzantine-tolerant state observation, synchronization, and graph computation problems in asynchronous distributed
+systems have also been shown impossible to solve using distributed
+algorithms [42].
+
+𝐵
+
+at only correct processes between the two events, i.e., the ←←←→
+← relation
+holds, then the causality relation can be determined correctly. However, it is impossible to ascertain whether such a path going through
+events at non-Byzantine processes exists, so this result is of questionable
+practical use. This is also an expensive operation because each broadcast must be done via Byzantine Reliable Broadcast which requires
+𝑂(𝑛) control message broadcasts per application message broadcast and
+an increased latency that depends on the particular implementation
+of BRB used. We also showed that the impossibility results under the
+→ relation remain despite allowing the use of cryptography. However
+𝐵
+
+CRediT authorship contribution statement
+
+in contrast, we showed possibility results under the ←←←→
+← relation for
+unicasts, broadcasts, and multicasts using cryptography.
+One way out of the impossibility results then is to either assume the
+‘‘Byzantine’’ process or a parallel process can run in a OS-controlled
+(user) library not subject to Byzantine influence or use trusted components (such as hardware) or assume a Trusted Execution Environment
+(TEE) to curtail the Byzantine behavior of processes [43]. For example,
+trusted components (TC) can issue timestamps to events correctly —
+however the assumption that the processes are Byzantine is negated.
+Such assumptions about a Validator can solve problems such as Byzantine Agreement (BA) and Consensus that are known to be unsolvable
+in asynchronous systems. More specifically, the correctness of such
+approaches hinges on the following assumption.
+
+Anshuman Misra: Writing – review & editing, Writing – original
+draft, Methodology, Investigation, Formal analysis, Conceptualization.
+Ajay D. Kshemkalyani: Writing – review & editing, Writing – original
+draft, Validation, Supervision, Project administration, Methodology,
+Investigation, Formal analysis, Conceptualization.
+Declaration of competing interest
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to
+influence the work reported in this paper.
+11
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+
+Data availability
+
+[23] A. Misra, A.D. Kshemkalyani, Solvability of Byzantine fault-tolerant causal
+ordering problems, in: M. Koulali, M. Mezini (Eds.), Proc. 10th International
+Conference on Networked Systems, NETYS, Virtual Event, May 17-19, 2022, in:
+Lecture Notes in Computer Science, vol. 13464, Springer, 2022, pp. 87–103,
+http://dx.doi.org/10.1007/978-3-031-17436-0_7.
+[24] A. Misra, A.D. Kshemkalyani, Causal ordering in the presence of Byzantine
+processes, in: 28th IEEE International Conference on Parallel and Distributed
+Systems, ICPADS, 2022, pp. 130–138, http://dx.doi.org/10.1109/ICPADS56603.
+2022.00025.
+[25] A. Misra, A.D. Kshemkalyani, Byzantine fault-tolerant causal ordering, in: 24th
+International Conference on Distributed Computing and Networking, ICDCN,
+2023, pp. 100–109, http://dx.doi.org/10.1145/3571306.3571395.
+[26] A. Misra, A.D. Kshemkalyani, Byzantine fault-tolerant causal order satisfying
+strong safety, in: S. Dolev, B. Schieber (Eds.), Stabilization, Safety, and Security
+of Distributed Systems - 25th International Symposium, in: Lecture Notes in
+Computer Science, vol. 14310, Springer, 2023, pp. 111–125, http://dx.doi.org/
+10.1007/978-3-031-44274-2_10.
+[27] A. Misra, A.D. Kshemkalyani, Solvability of Byzantine fault-tolerant causal
+ordering: Synchronous systems case, in: J. Hong, J.W. Park (Eds.), Proceedings
+of the 39th ACM/SIGAPP Symposium on Applied Computing, SAC 2024, Avila,
+Spain, April 8-12, 2024, ACM, 2024, pp. 251–256, http://dx.doi.org/10.1145/
+3605098.3636063.
+[28] A. Misra, A.D. Kshemkalyani, Byzantine-tolerant causal ordering for unicasts,
+multicasts, and broadcasts, IEEE Trans. Parallel Distrib. Syst. 35 (5) (2024)
+814–828, http://dx.doi.org/10.1109/TPDS.2024.3368280.
+[29] M.C. Pease, R.E. Shostak, L. Lamport, Reaching agreement in the presence
+of faults, J. ACM 27 (2) (1980) 228–234, http://dx.doi.org/10.1145/322186.
+322188.
+[30] L. Lamport, R.E. Shostak, M.C. Pease, The Byzantine generals problem, ACM
+Trans. Program. Lang. Syst. 4 (3) (1982) 382–401, http://dx.doi.org/10.1145/
+357172.357176, URL http://doi.acm.org/10.1145/357172.357176.
+[31] Y. Shang, Consensus of hybrid multi-agent systems with malicious nodes, IEEE
+Trans. Circuits Syst. II Express Briefs 67-II (4) (2020) 685–689, http://dx.doi.
+org/10.1109/TCSII.2019.2918752.
+[32] Y. Shang, Resilient cluster consensus of multiagent systems, IEEE Trans. Syst.
+Man Cybern. Syst. 52 (1) (2022) 346–356, http://dx.doi.org/10.1109/TSMC.
+2020.2997855.
+[33] C. Dwork, N.A. Lynch, L.J. Stockmeyer, Consensus in the presence of partial
+synchrony, J. ACM 35 (2) (1988) 288–323, http://dx.doi.org/10.1145/42282.
+42283, URL http://doi.acm.org/10.1145/42282.42283.
+[34] Y. Shang, A system model of three-body interactions in complex networks:
+consensus and conservation, Proc. R. Soc. A 478 (2022) 20210564, URL https:
+//doi.org/10.1098/rspa.2021.0564.
+[35] M.J. Fischer, N.A. Lynch, M. Paterson, Impossibility of distributed consensus with
+one faulty process, J. ACM 32 (2) (1985) 374–382, http://dx.doi.org/10.1145/
+3149.214121.
+[36] G. Bracha, S. Toueg, Asynchronous consensus and broadcast protocols, J. ACM
+32 (4) (1985) 824–840, http://dx.doi.org/10.1145/4221.214134.
+[37] G. Bracha, Asynchronous Byzantine agreement protocols, Inform. and Comput.
+75 (2) (1987) 130–143, http://dx.doi.org/10.1016/0890-5401(87)90054-X.
+[38] J.D. Cohen, Recursive hashing functions for n-grams, ACM Trans. Inf. Syst. 15
+(3) (1997) 291–320, http://dx.doi.org/10.1145/256163.256168.
+[39] B. Kang, R. Wilensky, J. Kubiatowicz, The hash history approach for reconciling mutual inconsistency, in: 23rd International Conference on Distributed
+Computing Systems, 2003, pp. 670–677, http://dx.doi.org/10.1109/ICDCS.2003.
+1203518.
+[40] M. Kleppmann, H. Howard, Byzantine eventual consistency and the fundamental
+limits of peer-to-peer databases, 2020, CoRR abs/2012.00472. arXiv:2012.00472.
+URL https://arxiv.org/abs/2012.00472.
+[41] F. Jacob, H. Hartenstein, Logical clocks and monotonicity for Byzantine-tolerant
+replicated data types, in: Proceedings of the 11th Workshop on Principles and
+Practice of Consistency for Distributed Data, PaPoC 2024, ACM, 2024, pp. 37–43,
+http://dx.doi.org/10.1145/3642976.3653034.
+[42] A.D. Kshemkalyani, A. Misra, Impossibility results for Byzantine-tolerant state
+observation, synchronization, and graph computation problems, Algorithms 18
+(2025) 26, http://dx.doi.org/10.3390/a18010026.
+[43] G. Sun, T. Tao, Y. Guo, M.H. Yiqing, J. Li, Building a verifiable logical clock
+for P2P networks, 2024, http://dx.doi.org/10.48550/ARXIV.2405.13349, CoRR
+abs/2405.13349. arXiv:2405.13349.
+[44] A.D. Kshemkalyani, A framework for viewing atomic events in distributed
+computations, Theoret. Comput. Sci. 196 (1–2) (1998) 45–70, http://dx.doi.org/
+10.1016/S0304-3975(97)00195-3.
+[45] A.D. Kshemkalyani, Causality and atomicity in distributed computations, Distrib.
+Comput. 11 (4) (1998) 169–189, http://dx.doi.org/10.1007/s004460050048.
+[46] A.D. Kshemkalyani, Reasoning about causality between distributed nonatomic
+events, Artificial Intelligence 92 (1–2) (1997) 301–315, http://dx.doi.org/10.
+1016/S0004-3702(97)00004-0.
+[47] A.D. Kshemkalyani, Temporal interactions of intervals in distributed systems,
+J. Comput. System Sci. 52 (2) (1996) 287–298, http://dx.doi.org/10.1006/jcss.
+1996.0022.
+
+No data was used for the research described in the article.
+
+References
+[1] A. Misra, A.D. Kshemkalyani, Detecting causality in the presence of Byzantine
+processes: There is no holy grail, in: 21st IEEE International Symposium on
+Network Computing and Applications, NCA, 2022, pp. 73–80, http://dx.doi.org/
+10.1109/NCA57778.2022.10013644.
+[2] R. Schwarz, F. Mattern, Detecting causal relationships in distributed computations: In search of the holy grail, Distrib. Comput. 7 (3) (1994) 149–174,
+http://dx.doi.org/10.1007/BF02277859.
+[3] L. Lamport, Time, clocks, and the ordering of events in a distributed system,
+Commun. ACM 21 (7) (1978) 558–565, http://dx.doi.org/10.1145/359545.
+359563.
+[4] A.D. Kshemkalyani, M. Singhal, Distributed Computing: Principles, Algorithms,
+and Systems, Cambridge University Press, 2011, URL https://doi.org/10.1017/
+CBO9780511805318.
+[5] E. Elnozahy, Manetho: Fault Tolerance in Distributed Systems Using RollbackRecovery and Process Replication, PhD Thesis, Tech. Rep., Tech. Report 93-212,
+Computer Science Department, Rice University, 1993.
+[6] C.J. Fidge, Logical time in distributed computing systems, IEEE Comput. 24 (8)
+(1991) 28–33, http://dx.doi.org/10.1109/2.84874.
+[7] F. Mattern, Virtual time and global states of distributed systems, in: Parallel and
+Distributed Algorithms, North-Holland, 1988, pp. 215–226.
+[8] B. Charron-Bost, Concerning the size of logical clocks in distributed systems,
+Inform. Process. Lett. 39 (1) (1991) 11–16, http://dx.doi.org/10.1016/00200190(91)90055-M.
+[9] A.D. Kshemkalyani, The power of logical clock abstractions, Distrib. Comput. 17
+(2) (2004) 131–150, http://dx.doi.org/10.1007/s00446-003-0105-9.
+[10] R. Prakash, M. Singhal, Dependency sequences and hierarchical clocks: Efficient
+alternatives to vector clocks for mobile computing systems, Wirel. Netw. 3 (5)
+(1997) 349–360, http://dx.doi.org/10.1023/A:1019134007206.
+[11] P.A.S. Ward, D.J. Taylor, Self-organizing hierarchical cluster timestamps, in: Proc.
+7th International Euro-Par Conference on Parallel Processing, 2001, pp. 46–56,
+http://dx.doi.org/10.1007/3-540-44681-8_8.
+[12] F.J. Torres-Rojas, M. Ahamad, Plausible clocks: Constant size logical clocks for
+distributed systems, Distrib. Comput. 12 (4) (1999) 179–195, http://dx.doi.org/
+10.1007/s004460050065.
+[13] M. Singhal, A.D. Kshemkalyani, An efficient implementation of vector clocks,
+Inform. Process. Lett. 43 (1) (1992) 47–52, http://dx.doi.org/10.1016/00200190(92)90028-T.
+[14] N.M. Preguiça, C. Baquero, P.S. Almeida, V. Fonte, R. Gonçalves, Brief announcement: efficient causality tracking in distributed storage systems with dotted
+version vectors, in: ACM Symposium on Principles of Distributed Computing,
+PODC, 2012, pp. 335–336, http://dx.doi.org/10.1145/2332432.2332497.
+[15] P.S. Almeida, C. Baquero, V. Fonte, Interval tree clocks, in: Proc. 12th International Conference on Principles of Distributed Systems, OPODIS, 2008, pp.
+259–274, http://dx.doi.org/10.1007/978-3-540-92221-6_18.
+[16] S.S. Kulkarni, M. Demirbas, D. Madappa, B. Avva, M. Leone, Logical physical
+clocks, in: Proc. 18th International Conference on Principles of Distributed
+Systems, OPODIS, 2014, pp. 17–32, http://dx.doi.org/10.1007/978-3-319-144726_2.
+[17] A.D. Kshemkalyani, M. Shen, B. Voleti, Prime clock: Encoded vector clock to
+characterize causality in distributed systems, J. Parallel Distrib. Comput. 140
+(2020) 37–51, http://dx.doi.org/10.1016/j.jpdc.2020.02.008.
+[18] A.D. Kshemkalyani, A. Misra, The bloom clock to characterize causality in
+distributed systems, in: The 23rd International Conference on Network-Based
+Information Systems, NBiS 2020, in: Advances in Intelligent Systems and Computing, vol. 1264, Springer, 2020, pp. 269–279, http://dx.doi.org/10.1007/9783-030-57811-4_25.
+[19] A. Misra, A.D. Kshemkalyani, The bloom clock for causality testing, in: D.
+Goswami, T.A. Hoang (Eds.), Proc. 17th International Conference on Distributed
+Computing and Internet Technology, in: Lecture Notes in Computer Science, vol.
+12582, Springer, 2021, pp. 3–23, http://dx.doi.org/10.1007/978-3-030-656218_1.
+[20] T. Pozzetti, A.D. Kshemkalyani, Resettable encoded vector clock for causality
+analysis with an application to dynamic race detection, IEEE Trans. Parallel
+Distrib. Syst. 32 (4) (2021) 772–785, http://dx.doi.org/10.1109/TPDS.2020.
+3032293.
+[21] K.P. Birman, T.A. Joseph, Reliable communication in the presence of failures,
+ACM Trans. Comput. Syst. 5 (1) (1987) 47–76, http://dx.doi.org/10.1145/7351.
+7478.
+[22] A. Auvolat, D. Frey, M. Raynal, F. Taïani, Byzantine-tolerant causal broadcast,
+Theoret. Comput. Sci. 885 (2021) 55–68, http://dx.doi.org/10.1016/J.TCS.2021.
+06.021.
+12
+
+Parallel Computing 124 (2025) 103136
+
+A. Misra and A.D. Kshemkalyani
+[48] A.D. Kshemkalyani, R. Kamath, Orthogonal relations for reasoning about posets,
+Int. J. Intell. Syst. 17 (12) (2002) 1101–1110, http://dx.doi.org/10.1002/int.
+10062.
+[49] P. Chandra, A.D. Kshemkalyani, Causality-based predicate detection across space
+and time, IEEE Trans. Comput. 54 (11) (2005) 1438–1453, http://dx.doi.org/10.
+1109/TC.2005.176.
+[50] A.D. Kshemkalyani, A fine-grained modality classification for global predicates,
+IEEE Trans. Parallel Distrib. Syst. 14 (8) (2003) 807–816, http://dx.doi.org/10.
+1109/TPDS.2003.1225059.
+[51] P. Chandra, A.D. Kshemkalyani, Data-stream-based global event monitoring using
+pairwise interactions, J. Parallel Distrib. Comput. 68 (6) (2008) 729–751, http:
+//dx.doi.org/10.1016/j.jpdc.2008.01.006.
+
+[52] A. Misra, A.D. Kshemkalyani, Detecting causality in the presence of Byzantine
+processes: The synchronous systems case, in: 30th International Symposium on
+Temporal Representation and Reasoning, TIME, in: LIPIcs, vol. 278, Schloss
+Dagstuhl - Leibniz-Zentrum für Informatik, 2023, pp. 11:1–11:14, http://dx.doi.
+org/10.4230/LIPICS.TIME.2023.11.
+[53] A. Misra, A.D. Kshemkalyani, Detecting causality in the presence of Byzantine
+processes: The case of synchronous systems, Inform. and Comput. 301 (2024)
+105212, http://dx.doi.org/10.1016/J.IC.2024.105212.
+[54] F.B. Schneider, Implementing fault-tolerant services using the state machine
+approach: A tutorial, ACM Comput. Surv. 22 (4) (1990) 299–319, http://dx.
+doi.org/10.1145/98163.98167.
+
+13
+
+
