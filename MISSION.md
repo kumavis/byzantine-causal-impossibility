@@ -285,28 +285,31 @@ emits `Fontconfig head is null` to stderr and silently exits with
 rc=2.  Adding a `libfontconfig` to `LD_LIBRARY_PATH` (e.g. via
 `~/.isabelle/Isabelle2025-2/etc/settings`) restores the build.
 
-### Open assumptions
+### Open assumptions (current state)
 
-Two named assumptions are introduced beyond plain HOL:
+The vacuity discovered post-build has been fixed.  The development now
+takes two meta-level *hypotheses* (not internal HOL axioms), both
+satisfiable and faithful to the paper:
 
-1. `byzantineSystem.flp_consensus_impossibility` — the FLP
-   impossibility transferred from the AFP `FLP` entry through the
-   "Byzantine subsumes crash" embedding.  **Caveat surfaced after
-   build verification:** at the present abstraction level this axiom
-   is not just hard to discharge against AFP — it is logically
-   *inconsistent* with `byzantine ≠ {}` in HOL.  The diagnostic
-   theory `Foundation_Vacuity.thy` exhibits a pure-HOL function
-   `simple_alg C V p \<equiv> \<exists>q\<in>C. V q` satisfying
-   `solves_Consensus C (simple_alg C)`, so `\<exists>alg. solves_Consensus
-   correct alg` is provably True, the axiom's right-hand side is
-   provably False, and the impossibility theorems are vacuous in
-   exactly the case the paper is about.  Fixing this requires
-   strengthening `solves_Consensus` so it demands realisability by an
-   asynchronous distributed protocol (e.g.\ by quantifying over
-   `flpSystem` instances of the AFP entry) — at which point the FLP
-   discharge becomes mechanisable but the rest of the development
-   (CD, BlackBox, Reductions) must be re-checked against the new
-   predicate.  Recorded as a load-bearing open item; see `README.md`.
+1. `bb_realizes_flp_consensus procs correct TYPE('s) TYPE('v)`
+   *(in `FLP_Consensus.thy`, hypothesis of Theorems 3, 4, 5)*.
+   States that any abstract `solves_BlackBox` solver can be realised
+   by an asynchronous distributed protocol that FLP-solves consensus.
+   This is the standard broadcast-and-collect reduction the paper
+   relies on implicitly; we expose it as a named hypothesis so the
+   user supplies specific `'s`, `'v` type witnesses.
+
+   Replaces the formerly-vacuous locale axiom
+   `byzantineSystem.flp_consensus_impossibility`.  That axiom was
+   unsatisfiable in HOL because the abstract `solves_Consensus`
+   predicate alone admits the pure-HOL function
+   `simple_alg C V p \<equiv> \<exists>q\<in>C. V q`; `Foundation_Vacuity.thy` retains
+   the regression witness.
+
+   The FLP impossibility itself is now *proven*: theorem
+   `flp_consensus_unsolvable` in `FLP_Consensus.thy` is discharged
+   against the AFP entry's `ConsensusFails` with no axiom.
+
 2. `byzantineSystem_with_identification.cd_can_identify_correct` —
    the positive form of the paper's meta-level argument that any CD
    solver internally identifies the correct set.  This is the

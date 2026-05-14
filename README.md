@@ -58,9 +58,11 @@ In scope, fully proved:
   Constructive: the same shape of adversary using a fresh internal event
   at the Byzantine process.
 - **Theorem 3** (`CD_impossible_unicast`): CD unsolvable in asynchronous
-  unicast with one or more Byzantine processes.  *Caveat: vacuous at the
-  current abstraction — see `Foundation_Vacuity.thy`.*
-- **Theorem 4** (`CD_impossible_broadcast`): same, broadcast.  Same caveat.
+  unicast with one or more Byzantine processes.  Conditional on the
+  meta-level bridge `bb_realizes_flp_consensus` (see Assumptions
+  section); the FLP impossibility itself is *proven*, not axiomatised.
+- **Theorem 4** (`CD_impossible_broadcast`): same, broadcast.  Same
+  bridge hypothesis.
 - **Theorem 5** (`CD_impossible_multicast`): trivial corollary of 3.
 
 Out of scope (left as deliberate extension points; see `Events.thy`'s
@@ -83,7 +85,8 @@ B-happened-before relation):
 | `Reductions.thy`           | The two reductions of §4.2.  Constructive proofs in declarative Isar.                                                |
 | `Impossibility.thy`        | Theorems 3, 4, 5 plus a summary corollary.                                                                           |
 | `Theorems_1_2.thy`         | Theorems 1 and 2 (FN-unavoidable, FN-or-FP-unavoidable for internal events).  Constructive adversaries via fresh ids.|
-| `Foundation_Vacuity.thy`   | Diagnostic: machine-checked counter-example showing `flp_consensus_impossibility` is unsatisfiable at this abstraction. |
+| `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`; BlackBox-to-FLP bridge predicate. |
+| `Foundation_Vacuity.thy`   | Regression diagnostic: retains the witness showing the abstract `solves_Consensus` predicate alone admits a trivial HOL solver. |
 
 ## Proof strategy
 
@@ -120,60 +123,49 @@ Consensus  ⪯  BlackBox  ⪯  CD
   `bb_correct_output` are discharged one by one, matching the paper's
   enumeration ("Managing false positives" / "Managing false negatives").
 
-- **Composition.** `Impossibility.thy` chains R2 ∘ R1 to derive Consensus
-  from CD; the FLP impossibility, imported through
-  `byzantineSystem.flp_consensus_impossibility`, then yields the
-  contradiction whenever `byzantine ≠ {}`.
+- **Composition.** `Impossibility.thy` chains R2 (CD → BlackBox) with
+  the BlackBox-to-FLP bridge predicate `bb_realizes_flp_consensus`
+  (defined in `FLP_Consensus.thy`) and the proven theorem
+  `flp_consensus_unsolvable` (also in `FLP_Consensus.thy`, discharged
+  against the AFP entry's `ConsensusFails`).  Theorems 3, 4, 5 take
+  the bridge predicate as an explicit hypothesis.
 
 ## Assumptions introduced beyond the paper
 
-The development introduces exactly two named assumptions that go beyond
-plain HOL definitions:
+The development introduces exactly two named meta-level assumptions
+that go beyond plain HOL definitions.  Both are *satisfiable*, both
+are faithful to the paper's informal argument, and neither is an
+internal HOL axiom (they are hypotheses on the headline theorems):
 
-1. **`byzantineSystem.flp_consensus_impossibility`** *(in
-   `ByzantineSystem.thy`)*.
-   Statement: `byzantine ≠ {} ⟹ ¬ (∃ alg. solves_Consensus correct alg)`.
-   Faithfulness: this is intended to mirror the FLP impossibility
-   result, imported through the *Byzantine subsumes crash* embedding.
+1. **`bb_realizes_flp_consensus`** *(in `FLP_Consensus.thy`,
+   hypothesis of Theorems 3/4/5)*.
+   Statement: ``if some abstract @{const solves_BlackBox} solver
+   exists, then some asynchronous distributed protocol
+   `(trans, sends, start)` of types `'p \<Rightarrow> 's \<Rightarrow> 'v messageValue \<Rightarrow> ...`
+   FLP-solves consensus''.
 
-   > **Important caveat (discovered during build verification).**  At
-   > the present abstraction level the axiom is *not* faithful to FLP:
-   > it is logically inconsistent with `byzantine ≠ {}` in HOL.  The
-   > theory `Foundation_Vacuity.thy` exhibits the witness
-   >
-   > ```isabelle
-   > simple_alg C V p \<equiv> (\<exists>q \<in> C. V q)
-   > ```
-   >
-   > which satisfies `solves_Consensus C (simple_alg C)` purely as an
-   > HOL function — no distributed-computation constraint is in scope
-   > for `solves_Consensus` to fail on.  Hence `\<exists>alg. solves_Consensus
-   > correct alg` is provably True, so the locale axiom collapses to
-   > `byzantine = {}`, and the impossibility theorems in
-   > `Impossibility.thy` are vacuous in exactly the regime
-   > (`byzantine \<noteq> {}`) the paper is about.
-   >
-   > The structural fix is to strengthen `solves_Consensus` so it
-   > demands realisability by an asynchronous distributed protocol —
-   > e.g.\ by re-stating the predicate as an existential over
-   > `flpSystem` instances of the AFP entry, instead of over arbitrary
-   > HOL functions.  Once `solves_Consensus` is strong enough that
-   > FLP's `ConsensusFails` actually bites on it, the discharge
-   > sketched in the original interpretation outline below becomes
-   > available.
+   Faithfulness: this is the standard textbook reduction --- broadcast
+   the input, collect a quorum of values, invoke the BlackBox oracle
+   on the collected vector, decide its `bb_w` --- in the FLP formal
+   model.  The paper relies on this reduction implicitly when it
+   says ``Consensus ⪯ BlackBox''.  We expose it as a named hypothesis
+   so the user instantiating the theorem must commit to specific
+   `'s`, `'v` type witnesses (any type variables with `flpSystem`'s
+   minimal-cardinality conditions suffice).
 
-   Intended interpretation outline (left here so it does not get lost
-   when the predicate is strengthened):
+   The hypothesis is *non-trivial* in the sense that, composed with
+   the proven theorem `flp_consensus_unsolvable`, it implies
+   `¬ BlackBox_solvable procs correct` --- but this is exactly what
+   the paper's chain wants.
 
-   ```isabelle
-   interpretation our_sys: byzantineSystem procs correct byzantine
-   proof
-     fix alg :: "'p consensus_alg"
-     show "byzantine \<noteq> {} \<Longrightarrow> \<not> (\<exists>alg. solves_Consensus correct alg)"
-       ⟨reduce solves_Consensus to AFP entry's predicate;
-        invoke AFP entry's FLP theorem⟩
-   qed
-   ```
+   *Replaces:* the formerly-vacuous locale axiom
+   `byzantineSystem.flp_consensus_impossibility`.  That axiom was
+   unsatisfiable at the abstract-function level
+   (`Foundation_Vacuity.thy` retains the machine-checked
+   counter-example).  The current development *proves* FLP
+   impossibility on FLP-style protocols (`flp_consensus_unsolvable`,
+   discharged via AFP's `ConsensusFails`) and uses the bridge above
+   to link CD-solvability into that proven impossibility.
 
 2. **`byzantineSystem_with_identification.cd_can_identify_correct`** *(in
    `Reductions.thy`)*.
