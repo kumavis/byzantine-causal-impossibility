@@ -61,8 +61,9 @@ w =
 and locally returns @{term L}, a list of ids of correct processes.''
 \end{quote}
 
-The CD output ``valid(F)'' is a boolean; we inline ``CD(E, F, e*_i)''
-as @{const valid}@{text " E F e_star"}.\<close>
+The CD output ``\<open>valid(F)\<close>'' is a boolean; we inline
+``\<open>CD(E, F, e_i^*)\<close>'' as @{const valid} applied to the relevant
+arguments.\<close>
 
 definition w_value ::
   "'p set \<Rightarrow> ('p \<Rightarrow> bool) \<Rightarrow> 'p history \<Rightarrow> 'p history \<Rightarrow> 'p event \<Rightarrow> bool" where
@@ -151,12 +152,12 @@ text \<open>Combining the paper's three demands on a Black\_Box output:
 \begin{enumerate}
   \item @{term "bb_F out"} is a valid reconstruction of the
         adversary's @{term "adv_E"} (this is the embedded
-        CD-correctness clause: ``Solving Black\_Box at @{term p_i}
-        requires \<dots>\ solving CD'', paper Section 4.2);
+        CD-correctness clause: ``Solving Black\_Box at \<open>p_i\<close>
+        requires ... solving CD'', paper Section 4.2);
   \item @{term "bb_w out"} equals @{const w_value} as paper-defined,
         evaluated at the algorithm's own @{term "bb_F out"};
   \item @{term "bb_L out"} is exactly the set @{term C} of correct
-        processes (paper: ``Solving Black\_Box at @{term p_i}
+        processes (paper: ``Solving Black\_Box at \<open>p_i\<close>
         requires identifying the set of correct processes'').
 \end{enumerate}\<close>
 

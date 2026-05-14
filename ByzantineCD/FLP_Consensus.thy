@@ -58,11 +58,11 @@ needs to satisfy the following three conditions.
         non-faulty processes must be that same value.
   \item \textbf{Termination:} Each non-faulty process must eventually
         decide on a value.
-\end{itemize>
+\end{itemize}
 According to the FLP impossibility result, it is impossible to solve
 Consensus in an asynchronous message-passing system with even a
 single crash failure prone process.''
-\end{quote>
+\end{quote}
 
 An algorithm in the FLP model (as formalised by the AFP entry) is a
 triple \<open>(transFn, sendsFn, startFn)\<close> of a transition function, a
@@ -99,7 +99,7 @@ not assumed):
 ``theorem ConsensusFails:
    assumes Termination: \<open>\<dots>\<close> and Validity: \<open>\<dots>\<close> and Agreement: \<open>\<dots>\<close>
    shows False''
-\end{quote>
+\end{quote}
 
 This is the genuine FLP result.  We unpack the predicate into its
 five conjuncts, interpret \<open>flpPseudoConsensus\<close>, and apply
@@ -138,7 +138,7 @@ as its consensus value the broadcast value that it receives from
 \<open>p_min(L)\<close> and terminates.  The conditions of Consensus --
 Agreement, Validity, and Termination -- can be seen to be satisfied.
 So Consensus $\preceq$ Black\_Box.''
-\end{quote>
+\end{quote}
 
 \textit{Deviation -- meta-level step.}  The paper's reduction is
 operational (``invoke BB locally, broadcast, collect, decide'').  We
@@ -151,7 +151,7 @@ capture the reduction as the named predicate below:
 ``If an abstract BlackBox solver for (\<open>P, C\<close>) exists, then -- in
 the AFP entry's FLP model -- some triple (\<open>transFn, sendsFn,
 startFn\<close>) of state-transition functions flp-solves consensus.''
-\end{quote>
+\end{quote}
 
 This is the right semantic content of the paper's reduction.  The
 predicate takes two type witnesses (\<open>'s\<close> for state, \<open>'v\<close> for

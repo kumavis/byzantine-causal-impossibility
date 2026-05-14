@@ -168,7 +168,7 @@ a boolean ``claim of validity''.  Paper Section 4:
 ``When 1 is returned, the algorithm output matches God's truth and
 solves CD correctly.  Thus, returning 1 indicates that the problem
 has been solved correctly by the algorithm using \<open>F\<close>.''
-\end{quote>
+\end{quote}
 
 \textit{Deviation:} the paper does not pin down whether the algorithm
 sees \<open>E\<close> during its computation.  Our type signature commits to
@@ -246,7 +246,7 @@ broadcast.  In multicast, a message is sent to a group \<open>G\<close> of
 processes corresponding to some subset of \<open>P\<close>.  A unicast is a
 multicast where \<open>|G| = 1\<close>.  A broadcast is a multicast where
 \<open>G = P\<close>.''
-\end{quote>
+\end{quote}
 
 We carry the mode as a datatype tag.
 

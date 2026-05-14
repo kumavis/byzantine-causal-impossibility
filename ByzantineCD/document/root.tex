@@ -1,0 +1,123 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{amsmath}
+\usepackage{isabelle,isabellesym}
+
+\usepackage[top=3cm,bottom=4.5cm]{geometry}
+
+% this should be the last package used
+\usepackage{pdfsetup}
+
+\urlstyle{rm}
+\isabellestyle{tt}
+
+\title{Byzantine-tolerant detection of causality:\\
+       there is no holy grail}
+\author{Mechanisation in Isabelle/HOL of the impossibility results of\\
+        Misra and Kshemkalyani (Parallel Computing 124, 2025)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We mechanise in Isabelle/HOL the impossibility results of
+Misra and Kshemkalyani, \emph{Byzantine-tolerant detection of
+causality: there is no holy grail} (Parallel Computing 124 (2025),
+article 103136).  The causality determination problem
+$\mathrm{CD}(E,F,e_i^*)$ asks an asynchronous distributed algorithm
+to reconstruct the global execution history $E$ at a correct
+process $p_i$, with respect to a target event $e_i^*$, such that
+the happened-before relation evaluated against the algorithm's
+collected $F$ agrees with the truth in $E$.  In the presence of
+even a single Byzantine process this is impossible.
+
+We formalise:
+
+\begin{itemize}
+  \item Theorems 1 and 2 (paper Section 4.1): no algorithm can
+        prevent false negatives in the Byzantine model, and for
+        internal events no algorithm can prevent both false
+        negatives and false positives.  Both proofs are
+        constructive: given any candidate algorithm we exhibit a
+        Byzantine adversary using a fresh natural number as event
+        identifier.
+  \item Theorems 3, 4, 5 (paper Section 4.2): the headline
+        impossibility results for unicast, broadcast, and
+        multicast communication.  The proofs follow the paper's
+        chain $\mathrm{Consensus} \preceq \mathrm{Black\_Box} \preceq
+        \mathrm{CD}$, with the FLP impossibility imported from the
+        AFP entry \emph{FLP} (Bisping et al., 2025) as a proven
+        theorem.
+\end{itemize}
+
+The development sits on top of the AFP entry \emph{FLP}.  Two
+named meta-level hypotheses are exposed on the headline theorems:
+\verb|cd_can_identify_correct| capturing the paper's argument that
+solving CD requires identifying the correct set, and
+\verb|bb_realizes_flp_consensus| capturing the standard reduction
+that an abstract Black\_Box solver can be realised by an
+asynchronous distributed protocol.  Neither is an internal HOL
+axiom; both are faithful to the paper's prose and discharged at
+interpretation time by the user.
+
+\medskip
+
+\noindent\emph{License:} BSD-3-Clause (matching the AFP \emph{FLP}
+entry).  The source paper is open access under CC-BY 4.0 and
+redistributed in this repository under that license.
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+\section*{Reading order}
+
+The theories are intended to be read in the following order:
+
+\begin{enumerate}
+  \item \verb|ByzantineSystem|: the process partition (correct
+        $\uplus$ Byzantine) and the abstract Consensus signature.
+  \item \verb|Events|: events, per-process and global histories,
+        program order, message order, happened-before relation
+        (paper Definitions 1, 2).
+  \item \verb|CD|: the Causality Determination problem,
+        $\mathit{valid}(F)$, false positives / negatives, the
+        adversary model, the CD-solver signature (paper
+        Definition 5).
+  \item \verb|BlackBox|: the Black\_Box problem of paper Section
+        4.2 with its piecewise broadcast value $w$.
+  \item \verb|Reductions|: the two reductions of paper Section
+        4.2 -- R1 (Consensus $\preceq$ BB) constructive in
+        declarative Isar, R2 (BB $\preceq$ CD) constructive modulo
+        the paper's named meta-level step
+        \verb|cd_can_identify_correct|.
+  \item \verb|Theorems_1_2|: paper Section 4.1, Theorems 1 and 2,
+        with explicit Byzantine adversary constructions using
+        fresh natural numbers.
+  \item \verb|FLP_Consensus|: the FLP-style consensus predicate
+        with the impossibility proven against the AFP entry's
+        \verb|ConsensusFails|, and the bridge predicate
+        \verb|bb_realizes_flp_consensus|.
+  \item \verb|Impossibility|: paper Section 4.2, Theorems 3, 4,
+        5 -- the headline results.
+  \item \verb|Foundation_Vacuity|: a regression diagnostic
+        documenting why the abstract \verb|solves_Consensus|
+        predicate is too weak to express FLP, and motivating the
+        FLP-style chain used by \verb|Impossibility|.
+\end{enumerate}
+
+\newpage
+
+% include generated text of all theories
+\input{session}
+
+\nocite{*}
+\bibliographystyle{abbrv}
+\bibliography{root}
+
+\end{document}

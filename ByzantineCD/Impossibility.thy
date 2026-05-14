@@ -47,7 +47,7 @@ text \<open>Paper, Theorem 3 (Section 4.2):
 ``It is impossible to solve causality determination (Definition 5)
 as specified by CD(\<open>E, F, e_i^*\<close>) in an asynchronous unicast-based
 message passing system with one or more Byzantine processes.''
-\end{quote>
+\end{quote}
 
 The paper's proof composes the two reductions of Section 4.2 with
 FLP's impossibility:
@@ -56,7 +56,7 @@ FLP's impossibility:
 solvable, then Consensus is also solvable.  However, that contradicts
 the FLP impossibility result [35] when applied to a Byzantine system,
 hence CD cannot be solvable.''
-\end{quote>
+\end{quote}
 
 \textit{Deviation -- non-vacuous chain.}  At our abstraction level the
 pure-HOL @{const solves_Consensus} predicate is too weak to express
@@ -74,7 +74,7 @@ protocol flp-solves consensus''.  The chain is then:
       \<open>\<longrightarrow>\<close> @{term False} (by \<open>flp_consensus_unsolvable\<close>, proven
                                  against the AFP entry's
                                  \<open>ConsensusFails\<close>).
-\end{quote>
+\end{quote}
 
 The two type witnesses @{typ 's} (state) and @{typ 'v} (message-value)
 are parameters of the bridge predicate.\<close>
@@ -91,11 +91,11 @@ theorem CD_impossible_unicast:
 proof
   assume CD_solv: "CD_solvable Unicast correct"
 
-  \<comment> \<open>Step 1: CD solvable \<Longrightarrow> BlackBox solvable.\<close>
+  \<comment> \<open>Step 1: CD solvable implies BlackBox solvable.\<close>
   have BB_solv: "BlackBox_solvable procs correct"
     by (rule CD_solvable_imp_BlackBox_solvable[OF CD_solv])
 
-  \<comment> \<open>Step 2: BlackBox solvable \<Longrightarrow> False, via the bridge and FLP.\<close>
+  \<comment> \<open>Step 2: BlackBox solvable yields False, via the bridge and FLP.\<close>
   have BB_unsolv:
     "\<not> BlackBox_solvable procs correct"
     by (rule BlackBox_unsolvable_via_bridge[OF bridge])
@@ -110,7 +110,7 @@ text \<open>Paper, Theorem 4 (Section 4.2):
 ``It is impossible to solve causality determination (Definition 5) as
 specified by CD(\<open>E, F, e_i^*\<close>) in an asynchronous broadcast-based
 message passing system with one or more Byzantine processes.''
-\end{quote>
+\end{quote}
 
 The paper's proof of Theorem 4 ``has the overall structure along the
 lines of that for Theorem 3''.  Its two differences:
@@ -121,7 +121,7 @@ lines of that for Theorem 3''.  Its two differences:
         \<open>F\<close>.''
   \item ``False negatives still cannot be prevented (Theorem 1
         carries over).''
-\end{enumerate>
+\end{enumerate}
 
 \textit{Deviation:} we do not formalise BRB.  We use the same
 chain as Theorem 3, exploiting the mode-agnosticism of @{const
@@ -160,7 +160,7 @@ the presence of even a single Byzantine process under unicast
 communication is impossible to solve.  As the special case of group
 size 1 (or 2) is not solvable, the general case of multicast is also
 not solvable.''
-\end{quote>
+\end{quote}
 
 \textit{Faithfulness:} our \<open>CD_solvable\<close> predicate is mode-agnostic
 at the level of Definition 5 (see comment in \<open>CD.thy\<close>); a multicast

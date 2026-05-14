@@ -162,7 +162,7 @@ proof -
   ultimately show ?thesis by (simp add: adversary_admissible_def)
 qed
 
-section \<open>Reduction R1: Consensus \<preceq> BlackBox\<close>
+section \<open>Reduction R1: Consensus reduces to BlackBox\<close>
 
 text \<open>Paper, Section 4.2 (proof of Theorem 3, step 2):
 \begin{quote}
@@ -198,7 +198,7 @@ text \<open>Paper's first Consensus property (Section 4.2):
 \begin{quote}
 ``Agreement: All non-faulty processes must agree on the same single
 value.''
-\end{quote>
+\end{quote}
 
 In our construction every correct process reads the same
 \<open>bb_w (bb_alg \<dots>)\<close> value (\<open>consensus_from_bb\<close> ignores its second
@@ -222,7 +222,7 @@ text \<open>Paper's second Consensus property (Section 4.2):
 ``Validity: If all non-faulty processes have the same initial value,
 then the agreed-on value by all the non-faulty processes must be
 that same value.''
-\end{quote>
+\end{quote}
 
 We get Validity by instantiating \<open>solves_BlackBox\<close> at the trivial
 adversary and reading off the uniform-case branches of \<open>w_value\<close>:
@@ -308,7 +308,7 @@ text \<open>Paper's third Consensus property (Section 4.2):
 \begin{quote}
 ``Termination: Each non-faulty process must eventually decide on a
 value.''
-\end{quote>
+\end{quote}
 
 \textit{Deviation (a load-bearing one):} our @{typ "'p consensus_alg"}
 is a total HOL function, so every correct process \emph{always}
@@ -350,7 +350,7 @@ qed
 
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
-section \<open>Reduction R2: BlackBox \<preceq> CD\<close>
+section \<open>Reduction R2: BlackBox reduces to CD\<close>
 
 text \<open>Paper, Section 4.2 (proof of Theorem 3, step 1):
 \begin{quote}
@@ -361,7 +361,7 @@ resolving the impact of contamination via message passing by the
 Byzantine processes from and through those Byzantine processes on the
 execution histories of processes at other processes.  Thus,
 Black\_Box $\preceq$ CD.''
-\end{quote>
+\end{quote}
 
 \textit{Deviation -- meta-level step.}  The paper does not exhibit a
 syntactic construction of a Black\_Box solver from a CD solver; the
@@ -375,7 +375,7 @@ capture this faithfully as a single named locale assumption
 then there is an algorithm \<open>cd_alg'\<close> that (i) produces the same valid
 \<open>F\<close>, (ii) returns the decision \<open>True\<close>, and (iii) also returns the
 set of correct processes.''
-\end{quote>
+\end{quote}
 
 This is the positive form of the paper's contrapositive (``producing
 valid \<open>F\<close> is impossible without internally identifying the correct
@@ -431,7 +431,7 @@ build a Black\_Box solver by simple projection:
         (which equals \<open>correct\<close> by assumption);
   \item \<open>bb_w\<close> := the paper's piecewise \<open>w_value\<close>, computed against
         \<open>L\<close> and the CD solver's boolean.
-\end{itemize>
+\end{itemize}
 
 This matches the paper's reduction in Section 4.2: ``Solving
 Black\_Box at \<open>p_i\<close> requires identifying the set of correct
@@ -483,14 +483,14 @@ proof (unfold solves_BlackBox_def, intro allI impI)
         else b)"
     by (simp add: bb_from_cd_with_L_def decomp L_eq)
 
-  \<comment> \<open>Sub-claim 1: F is valid.\<close>
+  \<comment> \<open>Sub-claim 1: \<open>F\<close> is valid.\<close>
   have claim_valid:
     "valid (adv_E adv) (bb_F ?out) (adv_e_star adv)"
     using valid_F' F_field by simp
 
-  \<comment> \<open>Sub-claim 2: bb_w matches @{const w_value}.  Three branches
-      following the piecewise definition (\S4.2): uniform-false,
-      uniform-true, mixed.\<close>
+  \<comment> \<open>Sub-claim 2: \<open>bb_w\<close> matches @{const w_value}.  Three
+      branches following the piecewise definition (Section 4.2):
+      uniform-false, uniform-true, mixed.\<close>
   have claim_w:
     "bb_w ?out =
        w_value correct V (adv_E adv) (bb_F ?out) (adv_e_star adv)"
@@ -545,7 +545,7 @@ proof (unfold solves_BlackBox_def, intro allI impI)
     qed
   qed
 
-  \<comment> \<open>Sub-claim 3: bb_L = correct.\<close>
+  \<comment> \<open>Sub-claim 3: \<open>bb_L\<close> equals the correct set.\<close>
   have claim_L: "bb_L ?out = correct" by (rule L_field)
 
   show "bb_correct_output procs correct V

@@ -126,7 +126,7 @@ text \<open>Definition 1, rule 1 (Section 2):
 ``Program Order: For the sequence of events \<open>\<langle>e_i^1, e_i^2, \<dots>\<rangle>\<close>
 executed by process \<open>p_i\<close>, \<open>\<forall> x, y\<close> such that \<open>x < y\<close> we have
 \<open>e_i^x \<rightarrow> e_i^y\<close>.''
-\end{quote>
+\end{quote}
 We mechanise this as: \<open>e\<close> precedes \<open>e'\<close> in \<open>H p\<close> iff \<open>e\<close> appears
 at a strictly earlier list index than \<open>e'\<close> in the same per-process
 list.\<close>
@@ -140,7 +140,7 @@ text \<open>Definition 1, rule 2 (Section 2):
 ``Message Order: If event \<open>e_i^x\<close> is a message send event executed
 at process \<open>p_i\<close> and \<open>e_j^y\<close> is the corresponding message receive
 event at process \<open>p_j\<close>, then \<open>e_i^x \<rightarrow> e_j^y\<close>.''
-\end{quote>
+\end{quote}
 Our \<open>message_order\<close> fires when the send and receive are
 matched by @{const matches} (same peer, same message id) and both
 events are recorded in the history.
@@ -168,7 +168,7 @@ definition hb_step :: "'p history \<Rightarrow> 'p event \<Rightarrow> 'p event 
 text \<open>Definition 1, rule 3 (Section 2):
 \begin{quote}
 ``Transitive Order: If \<open>e \<rightarrow> e' \<and> e' \<rightarrow> e''\<close> then \<open>e \<rightarrow> e''\<close>.''
-\end{quote>
+\end{quote}
 We define \<open>hb\<close> as the transitive closure of @{const hb_step}.
 This is the standard Lamport happened-before relation, evaluated
 against an arbitrary history @{term H}.
@@ -192,7 +192,7 @@ text \<open>The paper's \<open>e \<rightarrow> e'|_E\<close> notation (Section 3
 If \<open>e_h^x \<notin> T(E)\<close> then \<open>e_h^x \<rightarrow> e_i^*|_E\<close> evaluates to false; \dots\
 If \<open>e_h^x \<notin> T(F)\<close> (or \<open>e_i^* \<notin> T(F)\<close>) then \<open>e_h^x \<rightarrow> e_i^*|_F\<close>
 evaluates to false.''
-\end{quote>
+\end{quote}
 We mechanise this via a boolean \<open>hb_eval\<close> that requires both
 endpoints to be in @{term "events_of H"} before consulting the
 transitive closure.\<close>
@@ -230,7 +230,7 @@ may corrupt the collection of \<open>F\<close> to make it different from \<open>
 to agree mutually on a \<open>F\<close> that differs from \<open>E\<close> in what happened
 in \<open>E\<close> at the Byzantine processes; their \<open>F_j\<close> must also agree
 with \<open>E_j\<close> at all processes \<open>p_j\<close>.''
-\end{quote>
+\end{quote}
 
 \<open>correct_processes_agree\<close> below is the property an algorithm
 \emph{would} like to achieve at correct processes.  Crucially, we do

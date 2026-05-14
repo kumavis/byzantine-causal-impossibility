@@ -49,7 +49,7 @@ text \<open>Paper, Section 2:
 ``The distributed system is modeled as an undirected graph
 \<open>G = (P, C)\<close>.  Here \<open>P\<close> is the set of processes communicating
 asynchronously in the distributed system.  Let \<open>|P| = n\<close>.''
-\end{quote>
+\end{quote}
 
 The paper does not formalise the correct/Byzantine partition in
 the model itself; it talks about ``a correct process \<open>p_c\<close>'' and
@@ -107,7 +107,7 @@ needs to satisfy the following three conditions.
   \item Termination: Each non-faulty process must eventually decide
         on a value.
 \end{itemize}''
-\end{quote>
+\end{quote}
 
 We model a Consensus algorithm at the level of its observable
 input/output behaviour: it takes an initial-value vector \<open>V\<close>

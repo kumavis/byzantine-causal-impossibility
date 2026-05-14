@@ -152,7 +152,7 @@ text \<open>Paper, Theorem 1 (Section 4.1):
 causality determination problem (Definition 5) as specified by
 CD(\<open>E, F, e_i^*\<close>) in an asynchronous unicast/multicast/broadcast-based
 message passing system with one or more Byzantine processes.''
-\end{quote>
+\end{quote}
 
 Paper's proof sketch:
 \begin{quote}
@@ -163,7 +163,7 @@ A Byzantine \<open>p_g\<close> can suppress letting the rest of the system know
 of the occurrence of \<open>e_g^v\<close> or swap the order of occurrence of
 \<open>e_g^v\<close> and \<open>e_g^v'\<close> in what it lets the rest of the system know
 about the occurrence of the two local events.''
-\end{quote>
+\end{quote}
 
 \textbf{Our construction.}  Given an algorithm \<open>alg\<close>, pick a correct
 process \<open>p_i\<close> and a Byzantine process \<open>p_b\<close>.  Take \<open>e_star
@@ -422,7 +422,7 @@ text \<open>Paper, Theorem 2 (Section 4.1):
 negatives or false positives in determining \<open>e_h^x \<rightarrow> e_i^*\<close> at a
 correct process \<open>p_i\<close> in an asynchronous message passing system
 with one or more Byzantine processes.''
-\end{quote>
+\end{quote}
 
 Paper's proof sketch:
 \begin{quote}
@@ -433,7 +433,7 @@ event \<open>e_h^x\<close> to the rest of the system, leading to a false
 negative that cannot be prevented.  It may also choose to add a fake
 internal event \<open>e_h^x\<close> in what it reveals to the rest of the
 system, leading to a false positive that cannot be prevented.''
-\end{quote>
+\end{quote}
 
 \textbf{Our construction.}  We strengthen the Theorem 1 construction
 so that the witness event is an Internal event at a Byzantine
