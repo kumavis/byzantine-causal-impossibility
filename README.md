@@ -7,6 +7,11 @@ Mechanisation of the impossibility results of
 > *Parallel Computing* 124 (2025) 103136.
 > https://doi.org/10.1016/j.parco.2025.103136
 
+A local copy of the paper is in
+[`paper/`](paper/Misra-Kshemkalyani-2025-Byzantine-tolerant-detection-of-causality.pdf).
+The article is open access under CC-BY 4.0; the file is redistributed
+here under the same license.
+
 building on the AFP entry [`FLP`](https://www.isa-afp.org/entries/FLP.html)
 (Bisping, Brodmann, Jungnickel, Rickmann, Seidler, Stüber,
 Wilhelm-Weidner, Peters, Nestmann, 2025-03).
