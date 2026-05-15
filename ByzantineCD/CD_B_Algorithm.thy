@@ -33,7 +33,7 @@
 *)
 
 theory CD_B_Algorithm
-  imports BHB
+  imports BHB Theorems_1_2
 begin
 
 section \<open>Algorithm signature with a received-view input\<close>
@@ -431,6 +431,241 @@ theorem CD_B_solvable_broadcast:
   shows "CD_B_solvable_with_recv Broadcast correct"
   unfolding CD_B_solvable_with_recv_def
   by (rule CD_B_solvable_under_correct_reporting)
+
+section \<open>Theorem 8: CD_B impossible under multicast\<close>
+
+text \<open>Paper, Theorem 8 (Section 4.3, "impossible"):
+\begin{quote}
+``It is impossible to solve causality determination (Definition 6)
+as specified by \<open>CD_B(E, F, e_i^*)\<close>, now defined in terms of the
+\<open>\<rightarrow>_B\<close> relation, in an asynchronous multicast-based message passing
+system with one or more Byzantine processes.''
+\end{quote}
+
+The paper's proof is operational: BRM (Byzantine Reliable Multicast)
+is the primitive that would discharge @{const correct_reporting}
+under multicast, but BRM is unachievable without first identifying
+the Byzantine processes within each multicast group.  Hence under
+multicast, @{const correct_reporting} cannot be assumed, and an
+algorithm must be correct without it -- which we capture as the
+``strong'' predicate below.
+
+\textit{Our formalisation.}  We give T8 a concrete formal content by
+showing that no algorithm satisfies @{term produces_valid_F_B_recv_strong}
+-- the strengthened correctness predicate that drops the
+@{const correct_reporting} hypothesis.  The proof reuses the
+fresh-id adversary construction of @{theory_text \<open>Theorems_1_2.thy\<close>},
+specialised so the witness chain runs through two distinct
+\emph{correct} processes \<open>p_c\<close> and \<open>p_i\<close> (rather than a Byzantine
+sender).  The chain becomes a genuine \<open>\<rightarrow>_B\<close> chain in \<open>E\<close>; if the
+algorithm's output \<open>F\<close> has finite events_of, a fresh message id
+exists outside \<open>F\<close>, and the bhb chain in \<open>E\<close> is missing in \<open>F\<close> --
+a bhb-false-negative.
+
+The operational "BRM is unachievable" argument is not formalised
+(same out-of-scope band as T6/T7's BRU and BCB/BRB primitives); we
+state it as the meta-level fact that translates ``under multicast''
+into ``without @{const correct_reporting}'' into the strong
+predicate.\<close>
+
+definition produces_valid_F_B_recv_strong ::
+  "'p set \<Rightarrow> 'p cd_alg_with_recv \<Rightarrow> bool" where
+  "produces_valid_F_B_recv_strong C alg \<longleftrightarrow>
+     (\<forall>adv recv.
+        adversary_admissible C adv \<longrightarrow>
+        wf_history recv \<longrightarrow>
+          (let (F', _) = alg recv (adv_i adv) (adv_e_star adv) in
+             valid_B C (adv_E adv) F' (adv_e_star adv)))"
+
+subsection \<open>The bhb chain in \<open>fn_E\<close> when both endpoints are correct\<close>
+
+text \<open>The fresh-id history @{term "fn_E p_i p_c m"} from
+@{theory_text \<open>Theorems_1_2.thy\<close>}, when \<open>p_c\<close> and \<open>p_i\<close> are both
+correct and distinct, exhibits a genuine \<open>\<rightarrow>_B\<close> chain from the
+@{term "Send p_c 1 p_i m"} event to the @{term "Internal p_i 2"}
+event.  Both endpoints and the intermediate @{term "Receive p_i 1 p_c m"}
+are at correct processes, so every step is a @{const bhb_step}.\<close>
+
+lemma bhb_send_to_estar_in_fn_E:
+  assumes pi_cor: "p_i \<in> correct"
+      and pc_cor: "p_c \<in> correct"
+      and dist:   "p_c \<noteq> p_i"
+  shows "bhb correct (fn_E p_i p_c m) (Send p_c 1 p_i m) (Internal p_i 2)"
+proof -
+  let ?H = "fn_E p_i p_c m"
+  let ?s = "Send p_c 1 p_i m"
+  let ?r = "Receive p_i 1 p_c m"
+  let ?es = "Internal p_i 2"
+
+  have step_sr_under: "program_order ?H ?s ?r \<or> message_order ?H ?s ?r"
+    using message_order_fn_E_send_receive[OF dist] by blast
+  have proc_s: "proc_of ?s = p_c" by simp
+  have proc_r: "proc_of ?r = p_i" by simp
+  have proc_es: "proc_of ?es = p_i" by simp
+
+  have step_sr: "bhb_step correct ?H ?s ?r"
+    using step_sr_under pc_cor pi_cor proc_s proc_r
+    unfolding bhb_step_def by simp
+
+  have step_re_under: "program_order ?H ?r ?es \<or> message_order ?H ?r ?es"
+    using program_order_fn_E_at_pi[OF dist] by blast
+  have step_re: "bhb_step correct ?H ?r ?es"
+    using step_re_under pi_cor proc_r proc_es
+    unfolding bhb_step_def by simp
+
+  have base: "(bhb_step correct ?H)\<^sup>+\<^sup>+ ?s ?r"
+    using step_sr by blast
+  have extend: "(bhb_step correct ?H)\<^sup>+\<^sup>+ ?r ?es"
+    using step_re by blast
+  have "(bhb_step correct ?H)\<^sup>+\<^sup>+ ?s ?es"
+    using base extend by (rule tranclp_trans)
+  thus ?thesis unfolding bhb_def .
+qed
+
+lemma bhb_eval_send_to_estar_in_fn_E:
+  assumes pi_cor: "p_i \<in> correct"
+      and pc_cor: "p_c \<in> correct"
+      and dist:   "p_c \<noteq> p_i"
+  shows "bhb_eval correct (fn_E p_i p_c m)
+           (Send p_c 1 p_i m) (Internal p_i 2)"
+proof -
+  have e1: "Send p_c 1 p_i m \<in> events_of (fn_E p_i p_c m)"
+    using dist by (simp add: fn_E_events)
+  have e2: "Internal p_i 2 \<in> events_of (fn_E p_i p_c m)"
+    using dist by (simp add: fn_E_events)
+  have h: "bhb correct (fn_E p_i p_c m)
+             (Send p_c 1 p_i m) (Internal p_i 2)"
+    by (rule bhb_send_to_estar_in_fn_E[OF pi_cor pc_cor dist])
+  show ?thesis using e1 e2 h by (simp add: bhb_eval_def)
+qed
+
+subsection \<open>The impossibility\<close>
+
+text \<open>Following the same shape as @{thm CD_FN_unavoidable}: any
+purported strong-correct algorithm has finite output, fresh ids
+exist, the adversary places a bhb chain through two correct
+processes using a fresh id, the algorithm's @{term F} misses the
+chain start, and a bhb-false-negative results.\<close>
+
+theorem produces_valid_F_B_recv_strong_unsolvable:
+  assumes cor_two:
+        "\<exists>p_i p_c. p_i \<in> correct \<and> p_c \<in> correct \<and> p_c \<noteq> p_i"
+      and fin_F:
+        "\<forall>alg. produces_valid_F_B_recv_strong correct alg \<longrightarrow>
+           (\<forall>recv p_i_in.
+              finite (events_of
+                        (fst (alg recv p_i_in (Internal p_i_in 2)))))"
+  shows "\<not> (\<exists>alg. produces_valid_F_B_recv_strong correct alg)"
+proof
+  assume "\<exists>alg. produces_valid_F_B_recv_strong correct alg"
+  then obtain alg where solver:
+    "produces_valid_F_B_recv_strong correct alg" by blast
+
+  obtain p_i p_c where
+      pi_cor: "p_i \<in> correct"
+      and pc_cor: "p_c \<in> correct"
+      and dist:   "p_c \<noteq> p_i"
+    using cor_two by blast
+
+  define recv :: "'p \<Rightarrow> 'p history_local" where
+    "recv \<equiv> (\<lambda>_. [])"
+
+  have wfR: "wf_history recv"
+    unfolding recv_def wf_history_def wf_history_local_def by simp
+
+  let ?e_star = "Internal p_i 2"
+  let ?F = "fst (alg recv p_i ?e_star)"
+  let ?m = "fresh_nat ?F"
+  let ?adv = "fn_adv p_i p_c ?m"
+  let ?s = "Send p_c 1 p_i ?m"
+
+  have finF: "finite (events_of ?F)"
+    using fin_F solver by blast
+
+  have adm: "adversary_admissible correct ?adv"
+    using pi_cor dist by (rule adv_admissible_fn_adv)
+
+  have adv_eq:
+    "adv_E ?adv = fn_E p_i p_c ?m \<and>
+     adv_i ?adv = p_i \<and>
+     adv_e_star ?adv = ?e_star"
+    by (simp add: fn_adv_def)
+
+  have witness_in_E: "?s \<in> events_of (adv_E ?adv)"
+    using dist adv_eq by (simp add: fn_E_events)
+  have bhb_E_chain:
+    "bhb_eval correct (adv_E ?adv) ?s (adv_e_star ?adv)"
+    using bhb_eval_send_to_estar_in_fn_E[OF pi_cor pc_cor dist]
+          adv_eq by simp
+  have witness_not_in_F: "?s \<notin> events_of ?F"
+    using finF Send_at_fresh_nat_not_in_F[of ?F] by blast
+  have not_bhb_F:
+    "\<not> bhb_eval correct ?F ?s (adv_e_star ?adv)"
+    using witness_not_in_F by (simp add: bhb_eval_def)
+
+  \<comment> \<open>The adversary establishes a bhb-FN: chain in E, not in F.\<close>
+  have FN_witness:
+    "?s \<in> events_of (adv_E ?adv) \<union> events_of ?F \<and>
+     bhb_eval correct (adv_E ?adv) ?s (adv_e_star ?adv) \<and>
+     \<not> bhb_eval correct ?F ?s (adv_e_star ?adv)"
+    using witness_in_E bhb_E_chain not_bhb_F by blast
+
+  hence FN: "false_negative_B correct (adv_E ?adv) ?F (adv_e_star ?adv)"
+    unfolding false_negative_B_def by blast
+
+  \<comment> \<open>But the alleged solver claims valid_B on this very adversary.\<close>
+  have F_eq:
+    "?F = fst (alg recv (adv_i ?adv) (adv_e_star ?adv))"
+    using adv_eq by simp
+  have "valid_B correct (adv_E ?adv) ?F (adv_e_star ?adv)"
+  proof -
+    from solver adm wfR have
+      "let (F', _) = alg recv (adv_i ?adv) (adv_e_star ?adv) in
+         valid_B correct (adv_E ?adv) F' (adv_e_star ?adv)"
+      by (simp add: produces_valid_F_B_recv_strong_def)
+    thus ?thesis using F_eq by (simp add: Let_def split: prod.split_asm)
+  qed
+  hence "\<not> false_negative_B correct (adv_E ?adv) ?F (adv_e_star ?adv)"
+    using valid_B_iff_no_FP_FN by blast
+  with FN show False by contradiction
+qed
+
+text \<open>Mapping to paper Theorem 8.  The paper says: under multicast,
+@{const correct_reporting} cannot be guaranteed (BRM is
+unachievable), so an algorithm would have to work without it -- but
+the previous theorem says no algorithm does.  Hence CD_B is
+unsolvable under multicast.
+
+The operational ``BRM is unachievable'' claim itself is out of
+scope (it requires modelling multicast groups, the BRM primitive,
+and the unachievability of BRM without Byzantine identification).
+We state the impossibility conditionally on the operational claim:
+``if BRM-style correct\<open>_reporting\<close> is not guaranteed under
+multicast, then CD_B is unsolvable under multicast in the
+\<open>recv\<close>-augmented signature''.
+
+In our predicate vocabulary:
+\begin{itemize}
+  \item ``correct\<open>_reporting\<close> guaranteed'' corresponds to using
+        the \emph{conditional} predicate @{const produces_valid_F_B_recv}
+        -- which is satisfiable (T6/T7).
+  \item ``correct\<open>_reporting\<close> not guaranteed'' corresponds to
+        using the \emph{strong} predicate
+        @{const produces_valid_F_B_recv_strong} -- which is
+        \emph{not} satisfiable
+        (@{thm produces_valid_F_B_recv_strong_unsolvable}).
+\end{itemize}\<close>
+
+theorem CD_B_unsolvable_multicast_abstract:
+  assumes cor_two:
+        "\<exists>p_i p_c. p_i \<in> correct \<and> p_c \<in> correct \<and> p_c \<noteq> p_i"
+      and fin_F:
+        "\<forall>alg. produces_valid_F_B_recv_strong correct alg \<longrightarrow>
+           (\<forall>recv p_i_in.
+              finite (events_of
+                        (fst (alg recv p_i_in (Internal p_i_in 2)))))"
+  shows "\<not> (\<exists>alg. produces_valid_F_B_recv_strong correct alg)"
+  by (rule produces_valid_F_B_recv_strong_unsolvable[OF cor_two fin_F])
 
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
