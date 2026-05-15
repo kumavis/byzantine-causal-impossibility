@@ -12,9 +12,10 @@
 
            That axiom has now been retired.  The FLP impossibility is
            imported instead through the AFP entry's ConsensusFails
-           theorem in FLP_Consensus.thy, and the chain from CD
-           solvability to a contradiction is closed in Impossibility.thy
-           via an explicit BlackBox-to-FLP bridge predicate.
+           theorem in FLP_Consensus.thy (proved, not assumed), and the
+           chain from CD solvability to a contradiction is closed in
+           Impossibility.thy via the explicit meta-level hypothesis
+           "\<not> BlackBox_solvable procs correct" on Theorems 3/4/5.
 
            The witness lemmas in this file are kept as a regression
            test: they continue to prove that the abstract predicate

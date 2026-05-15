@@ -411,6 +411,30 @@ definition produces_valid_F_with_L ::
 
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
+text \<open>\textbf{Role of this locale in the development.}  The locale
+\<open>byzantineSystem_with_identification\<close> below extends @{locale
+byzantineSystem} with the single named meta-level axiom
+\<open>cd_can_identify_correct\<close> -- the positive form of the paper's
+contrapositive ``producing valid F is impossible without identifying
+the correct set'' (paper Section 4.2).  Together with the
+constructive \<open>bb_from_cd_with_L\<close> defined below it gives R2 (BB
+\<preceq> CD), which is what the paper actually proves to establish
+Theorems 3/4/5.
+
+\textit{Note on critical path.}  After the discharge of the BB
+impossibility via Theorem 1 (\<open>BlackBox_Unsolvable.thy\<close>) and the
+direct Theorem-1 chain for the headline impossibility theorems
+(\<open>Impossibility.thy\<close>), the locale and its axiom are no longer on
+the critical path of Theorems 3/4/5: the headline theorems live in
+plain @{locale byzantineSystem} and route through Theorem 1 in one
+step.  The locale and R2 are nevertheless retained, as paper-faithful
+documentation of the §4.2 chain and as a fully-proven alternative
+derivation (composing R2 with @{theory_text \<open>BlackBox_Unsolvable.thy\<close>}
+yields the same headline conclusion via the route the paper
+actually uses).  This is the only locale axiom anywhere in the
+development; it is explicitly localised in this sub-locale rather
+than added to the base locale.\<close>
+
 locale byzantineSystem_with_identification = byzantineSystem +
   assumes cd_can_identify_correct:
     "produces_valid_F correct cd_alg \<Longrightarrow>

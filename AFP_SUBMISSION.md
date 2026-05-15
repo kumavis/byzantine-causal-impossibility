@@ -46,19 +46,28 @@ submitter would still need to do.
    - **License:** BSD-3-Clause (matching the FLP entry we build on).
    - **Depends on:** AFP entry `FLP`.
 
-3. **Open meta-level hypotheses to disclose in the abstract**:
-   The headline impossibility theorems (3, 4, 5) and the
-   BlackBox-to-CD reduction (R2) take two named meta-level
-   hypotheses, both faithful to the paper's prose and both
-   satisfiable:
-     - `bb_realizes_flp_consensus procs correct TYPE('s) TYPE('v)`
-       (the broadcast-and-collect reduction from BlackBox to a
-       genuine FLP-style consensus protocol);
-     - `byzantineSystem_with_identification.cd_can_identify_correct`
-       (the paper's meta-level "solving CD requires identifying the
-       correct set" argument).
-   The FLP impossibility itself is *not* an axiom -- it is a real
-   proof against the AFP entry's `flpPseudoConsensus.ConsensusFails`.
+3. **Open hypotheses to disclose in the abstract**:
+   The headline impossibility theorems (3, 4, 5) take exactly one
+   mild finiteness side hypothesis:
+     - `fin_cd` (side hypothesis on Theorems 3/4/5 in
+       `Impossibility.thy`): any candidate CD-solver `cd_alg` that
+       produces a valid `F` has finite `events_of` output at the
+       Theorem 1 adversary's local target event of the form
+       `Internal p_i_in 2`.  Trivially satisfied by any algorithm
+       whose output is supported on the (finite) process set;
+       identical in shape to the `fin_F` hypothesis of Theorem 1
+       (`CD_FN_unavoidable`).
+   No HOL axioms, no locale axioms on the impossibility chain.
+   Proofs of Theorems 3/4/5 route directly through Theorem 1; the
+   paper's "Consensus ⪯ BlackBox ⪯ CD + FLP" chain is preserved as
+   paper-faithful documentation in `Reductions.thy`,
+   `BlackBox_Unsolvable.thy`, and `FLP_Consensus.thy` but is not on
+   the critical path.  All the meta-level hypotheses that earlier
+   revisions exposed (`bb_realizes_flp_consensus`, `bb_unsolv`,
+   `cd_can_identify_correct` on the chain) have been discharged or
+   demoted to documentation.  Both the BlackBox impossibility and
+   the FLP impossibility are themselves proved (against Theorem 1
+   and against `flpPseudoConsensus.ConsensusFails` respectively).
 
 4. **AFP technical conventions** (already satisfied, listed for
    double-checking):

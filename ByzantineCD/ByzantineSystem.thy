@@ -157,11 +157,13 @@ axiom turned out to be unsatisfiable in HOL (the pure-HOL function
 \<open>simple_alg C V p \<equiv> \<exists>q\<in>C. V q\<close> satisfies @{const solves_Consensus},
 so denying it collapses to \<open>byzantine = {}\<close>).  See
 \<open>Foundation_Vacuity.thy\<close> for the machine-checked counter-example.
-The impossibility is now imported from the AFP entry's
-\<open>ConsensusFails\<close> theorem via the FLP-style predicate in
-\<open>FLP_Consensus.thy\<close>, and the chain from CD-solvability to a
-contradiction is closed in \<open>Impossibility.thy\<close> through the
-\<open>bb_realizes_flp_consensus\<close> bridge.\<close>
+The FLP impossibility is now proven (not axiomatised) against the
+AFP entry's \<open>ConsensusFails\<close> theorem in \<open>FLP_Consensus.thy\<close>; the
+chain from CD-solvability to a contradiction is closed in
+\<open>Impossibility.thy\<close> via the meta-level hypothesis
+\<open>\<not> BlackBox_solvable procs correct\<close> -- the paper's informal
+``Consensus \<preceq> BlackBox + FLP'' step, exposed as an explicit
+hypothesis on Theorems 3/4/5 rather than discharged operationally.\<close>
 
 locale byzantineSystem = process_partition procs correct byzantine
   for procs correct byzantine :: "'p set"

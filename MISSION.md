@@ -291,24 +291,47 @@ The vacuity discovered post-build has been fixed.  The development now
 takes two meta-level *hypotheses* (not internal HOL axioms), both
 satisfiable and faithful to the paper:
 
-1. `bb_realizes_flp_consensus procs correct TYPE('s) TYPE('v)`
-   *(in `FLP_Consensus.thy`, hypothesis of Theorems 3, 4, 5)*.
-   States that any abstract `solves_BlackBox` solver can be realised
-   by an asynchronous distributed protocol that FLP-solves consensus.
-   This is the standard broadcast-and-collect reduction the paper
-   relies on implicitly; we expose it as a named hypothesis so the
-   user supplies specific `'s`, `'v` type witnesses.
+1. `fin_cd` *(side hypothesis of Theorems 3, 4, 5 in
+   `Impossibility.thy`)*.
+   Statement: every candidate CD-solver `cd_alg` that produces a
+   valid `F` for `correct` has finite `events_of` output at the
+   Theorem 1 adversary's local target event of the form
+   `Internal p_i_in 2`.  Identical in shape to the `fin_F`
+   hypothesis of Theorem 1 (`CD_FN_unavoidable`); trivially
+   satisfied by any "implementable" algorithm whose output is
+   supported on the finite process set.
 
-   Replaces the formerly-vacuous locale axiom
-   `byzantineSystem.flp_consensus_impossibility`.  That axiom was
-   unsatisfiable in HOL because the abstract `solves_Consensus`
-   predicate alone admits the pure-HOL function
-   `simple_alg C V p \<equiv> \<exists>q\<in>C. V q`; `Foundation_Vacuity.thy` retains
-   the regression witness.
+   *History.*  Earlier revisions of this development took two
+   additional load-bearing hypotheses on Theorems 3/4/5:
 
-   The FLP impossibility itself is now *proven*: theorem
-   `flp_consensus_unsolvable` in `FLP_Consensus.thy` is discharged
-   against the AFP entry's `ConsensusFails` with no axiom.
+   - An unconditional `bb_unsolv: ¬ BlackBox_solvable procs correct`,
+     since *discharged* by `BlackBox_unsolvable` in
+     `BlackBox_Unsolvable.thy` (a proven theorem derived directly
+     from Theorem 1 via the BB-to-CD projection).
+
+   - The locale axiom `cd_can_identify_correct` in
+     `byzantineSystem_with_identification` (R2's meta-level step,
+     in `Reductions.thy`).  This *no longer feeds the
+     impossibility chain*: Theorems 3/4/5 now route directly
+     through Theorem 1 in `byzantineSystem` (no `_with_identification`
+     extension needed).  R2 itself is preserved as paper-faithful
+     documentation of the §4.2 chain.
+
+   Even earlier revisions packaged `bb_unsolv` as a "bridge"
+   predicate `bb_realizes_flp_consensus`, since fully retired.
+
+   The formerly-vacuous locale axiom
+   `byzantineSystem.flp_consensus_impossibility` was retired earlier;
+   `Foundation_Vacuity.thy` retains the machine-checked
+   counter-example as a regression test.
+
+   The FLP impossibility is *proven* (no axiom) as
+   `flp_consensus_unsolvable` in `FLP_Consensus.thy`, against the
+   AFP entry's `ConsensusFails`.  It is retained as the AFP-FLP
+   citation that motivates the paper's chain
+   `Consensus ⪯ BlackBox ⪯ CD` but is not on the impossibility
+   path of this development; the headline theorems route through
+   Theorem 1 instead.
 
 2. `byzantineSystem_with_identification.cd_can_identify_correct` —
    the positive form of the paper's meta-level argument that any CD

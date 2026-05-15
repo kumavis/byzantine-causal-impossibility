@@ -58,11 +58,13 @@ In scope, fully proved:
   Constructive: the same shape of adversary using a fresh internal event
   at the Byzantine process.
 - **Theorem 3** (`CD_impossible_unicast`): CD unsolvable in asynchronous
-  unicast with one or more Byzantine processes.  Conditional on the
-  meta-level bridge `bb_realizes_flp_consensus` (see Assumptions
-  section); the FLP impossibility itself is *proven*, not axiomatised.
+  unicast with one or more Byzantine processes.  Conditional only on
+  a mild finiteness side condition (`fin_cd` — see Assumptions
+  section).  Proof routes *directly* through Theorem 1
+  (`CD_FN_unavoidable`); the paper's "Consensus ⪯ BlackBox ⪯ CD + FLP"
+  chain is bypassed.
 - **Theorem 4** (`CD_impossible_broadcast`): same, broadcast.  Same
-  bridge hypothesis.
+  side condition.
 - **Theorem 5** (`CD_impossible_multicast`): trivial corollary of 3.
 
 Out of scope (left as deliberate extension points; see `Events.thy`'s
@@ -78,14 +80,15 @@ B-happened-before relation):
 | File                       | Purpose                                                                                                              |
 |----------------------------|----------------------------------------------------------------------------------------------------------------------|
 | `ROOT`                     | Session declaration; depends on AFP `FLP`.                                                                           |
-| `ByzantineSystem.thy`      | Process partition (correct ⊎ byzantine), Consensus solver signature, FLP impossibility imported as a locale axiom.   |
+| `ByzantineSystem.thy`      | Process partition (correct ⊎ byzantine), Consensus solver signature, `byzantineSystem` locale (no extra axioms).     |
 | `Events.thy`               | Event datatype, per-process and global histories, program-order, message-order, happened-before relation, `hb_eval`. |
 | `CD.thy`                   | `valid(F)`, false positives/negatives, adversary model, CD-solver signature, `produces_valid_F`, `CD_solvable`.      |
 | `BlackBox.thy`             | `w_value`, BB output record, `solves_BlackBox`, `BlackBox_solvable`.                                                 |
-| `Reductions.thy`           | The two reductions of §4.2.  Constructive proofs in declarative Isar.                                                |
-| `Impossibility.thy`        | Theorems 3, 4, 5 plus a summary corollary.                                                                           |
+| `Reductions.thy`           | The two reductions of §4.2 (R1 constructive in `byzantineSystem`; R2 in sub-locale `byzantineSystem_with_identification` with the paper's named meta-level step `cd_can_identify_correct`).  Preserved as paper-faithful documentation; not on the critical path of Theorems 3/4/5. |
+| `Impossibility.thy`        | Theorems 3, 4, 5 plus a summary corollary.  Lives in `byzantineSystem` (not `_with_identification`) and routes directly through Theorem 1.                                                                           |
 | `Theorems_1_2.thy`         | Theorems 1 and 2 (FN-unavoidable, FN-or-FP-unavoidable for internal events).  Constructive adversaries via fresh ids.|
-| `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`; BlackBox-to-FLP bridge predicate. |
+| `BlackBox_Unsolvable.thy`  | *Proves* `¬ BlackBox_solvable procs correct` by direct reduction to Theorem 1 via the BB→CD projection.  This discharges what was previously the `bb_unsolv` hypothesis on Theorems 3/4/5. |
+| `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`.  Retained as the AFP-FLP citation that motivates the paper's chain; not used in the headline impossibility proof. |
 | `Foundation_Vacuity.thy`   | Regression diagnostic: retains the witness showing the abstract `solves_Consensus` predicate alone admits a trivial HOL solver. |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
@@ -133,49 +136,95 @@ Consensus  ⪯  BlackBox  ⪯  CD
   `bb_correct_output` are discharged one by one, matching the paper's
   enumeration ("Managing false positives" / "Managing false negatives").
 
-- **Composition.** `Impossibility.thy` chains R2 (CD → BlackBox) with
-  the BlackBox-to-FLP bridge predicate `bb_realizes_flp_consensus`
-  (defined in `FLP_Consensus.thy`) and the proven theorem
-  `flp_consensus_unsolvable` (also in `FLP_Consensus.thy`, discharged
-  against the AFP entry's `ConsensusFails`).  Theorems 3, 4, 5 take
-  the bridge predicate as an explicit hypothesis.
+- **Composition (the direct route, used by Theorems 3/4/5).**
+  `Impossibility.thy` chains `CD_solvable mode correct` (which
+  existentially extracts a `produces_valid_F` witness) with Theorem 1
+  (`CD_FN_unavoidable`).  Theorem 1 immediately yields an admissible
+  adversary that defeats the witness — contradiction.  No BlackBox
+  detour is needed; the paper's `Consensus ⪯ BlackBox ⪯ CD + FLP`
+  chain is bypassed at the headline-theorem level.
+
+- **Paper's chain (preserved as documentation, not on the critical
+  path).**  `Reductions.thy` retains both reductions of §4.2:
+  R1 constructive (BB ⪯ Consensus) and R2 conditional on
+  `cd_can_identify_correct` (CD ⪯ BB).  `BlackBox_Unsolvable.thy`
+  proves `¬ BlackBox_solvable procs correct` directly by the same
+  Theorem-1 reduction, applied to the BB-to-CD projection.
+  `FLP_Consensus.thy` proves the FLP-style consensus impossibility
+  (`flp_consensus_unsolvable`) against the AFP entry's
+  `ConsensusFails`.  These three together reproduce the paper's
+  chain as a fully proven alternative derivation of Theorems 3/4/5
+  — but the headline theorems no longer need any of it.
 
 ## Assumptions introduced beyond the paper
 
-The development introduces exactly two named meta-level assumptions
-that go beyond plain HOL definitions.  Both are *satisfiable*, both
-are faithful to the paper's informal argument, and neither is an
-internal HOL axiom (they are hypotheses on the headline theorems):
+The headline impossibility theorems (Theorems 3/4/5 in
+`Impossibility.thy`) take exactly one mild side hypothesis,
+`fin_cd`.  No HOL axioms, no locale axioms on the impossibility
+chain.
 
-1. **`bb_realizes_flp_consensus`** *(in `FLP_Consensus.thy`,
-   hypothesis of Theorems 3/4/5)*.
-   Statement: ``if some abstract @{const solves_BlackBox} solver
-   exists, then some asynchronous distributed protocol
-   `(trans, sends, start)` of types `'p \<Rightarrow> 's \<Rightarrow> 'v messageValue \<Rightarrow> ...`
-   FLP-solves consensus''.
+1. **`fin_cd`** *(side hypothesis of Theorems 3/4/5)*.
+   Statement: every candidate CD-solver `cd_alg` that produces a
+   valid `F` for `correct` has finite `events_of` output, at the
+   adversary's local target event of the form `Internal p_i_in 2`:
 
-   Faithfulness: this is the standard textbook reduction --- broadcast
-   the input, collect a quorum of values, invoke the BlackBox oracle
-   on the collected vector, decide its `bb_w` --- in the FLP formal
-   model.  The paper relies on this reduction implicitly when it
-   says ``Consensus ⪯ BlackBox''.  We expose it as a named hypothesis
-   so the user instantiating the theorem must commit to specific
-   `'s`, `'v` type witnesses (any type variables with `flpSystem`'s
-   minimal-cardinality conditions suffice).
+   ```
+   ∀cd_alg. produces_valid_F correct cd_alg ⟶
+       ∀p_i_in. finite (events_of
+                          (fst (cd_alg p_i_in (Internal p_i_in 2))))
+   ```
 
-   The hypothesis is *non-trivial* in the sense that, composed with
-   the proven theorem `flp_consensus_unsolvable`, it implies
-   `¬ BlackBox_solvable procs correct` --- but this is exactly what
-   the paper's chain wants.
+   Faithfulness: any algorithm whose output `F` is supported on
+   `procs` (the finite process set) trivially satisfies this.  The
+   condition exposes the requirement that a candidate CD-solver's
+   collected history is "implementable" in the sense of producing
+   only finitely many events at any given query.  It is identical
+   in shape to the `fin_F` side hypothesis of Theorem 1
+   (`CD_FN_unavoidable` in `Theorems_1_2.thy`), where it is needed
+   to ensure a fresh natural number exists.
 
-   *Replaces:* the formerly-vacuous locale axiom
-   `byzantineSystem.flp_consensus_impossibility`.  That axiom was
-   unsatisfiable at the abstract-function level
-   (`Foundation_Vacuity.thy` retains the machine-checked
-   counter-example).  The current development *proves* FLP
-   impossibility on FLP-style protocols (`flp_consensus_unsolvable`,
-   discharged via AFP's `ConsensusFails`) and uses the bridge above
-   to link CD-solvability into that proven impossibility.
+   *History — the discharge of two previous hypotheses.*
+
+   - Earlier revisions of Theorems 3/4/5 took an unconditional
+     meta-level hypothesis `¬ BlackBox_solvable procs correct`
+     (named `bb_unsolv`).  That hypothesis was *discharged*:
+     `BlackBox_unsolvable` is now a proven theorem in
+     `BlackBox_Unsolvable.thy`, derived from Theorem 1 via the
+     BB-to-CD projection
+     `(λi e. (bb_F (bb_alg procs (λ_. False) e i), True))`.
+
+   - Theorems 3/4/5 previously lived in
+     `byzantineSystem_with_identification`, which adds the locale
+     axiom `cd_can_identify_correct` (R2's meta-level step:
+     "any CD-solver that produces valid F can be augmented to
+     report L = correct").  After the above discharge, the
+     impossibility chain no longer needs to go through BlackBox at
+     all — Theorem 1 contradicts CD-solvability directly — so
+     Theorems 3/4/5 now live in plain `byzantineSystem`, and
+     `cd_can_identify_correct` is no longer on the critical path.
+     R2 itself is preserved in `Reductions.thy` as paper-faithful
+     documentation of the §4.2 chain (it provides an alternative
+     derivation of `¬ BlackBox_solvable`, which composes with
+     `BlackBox_unsolvable` for an alternative — but redundant —
+     route to the headline theorems).
+
+   - Even earlier revisions packaged `bb_unsolv` as an elaborate
+     "bridge" predicate `bb_realizes_flp_consensus`.  Logically
+     equivalent to `¬ BlackBox_solvable` (because
+     `flp_consensus_unsolvable` makes its inner existential always
+     False); fully retired now.
+
+   - The formerly-vacuous locale axiom
+     `byzantineSystem.flp_consensus_impossibility` (unsatisfiable
+     at the abstract-function level) was retired in an even
+     earlier round; `Foundation_Vacuity.thy` retains the
+     machine-checked counter-example as a regression test.
+
+   The proven theorem `flp_consensus_unsolvable` (in
+   `FLP_Consensus.thy`, discharged against the AFP entry's
+   `ConsensusFails`) is retained as the AFP-FLP citation that
+   motivates the paper's chosen chain.  It is not on the
+   impossibility chain.
 
 2. **`byzantineSystem_with_identification.cd_can_identify_correct`** *(in
    `Reductions.thy`)*.

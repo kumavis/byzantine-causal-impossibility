@@ -54,15 +54,24 @@ We formalise:
         theorem.
 \end{itemize}
 
-The development sits on top of the AFP entry \emph{FLP}.  Two
-named meta-level hypotheses are exposed on the headline theorems:
-\verb|cd_can_identify_correct| capturing the paper's argument that
-solving CD requires identifying the correct set, and
-\verb|bb_realizes_flp_consensus| capturing the standard reduction
-that an abstract Black\_Box solver can be realised by an
-asynchronous distributed protocol.  Neither is an internal HOL
-axiom; both are faithful to the paper's prose and discharged at
-interpretation time by the user.
+The development sits on top of the AFP entry \emph{FLP}.  The
+headline impossibility theorems (3, 4, 5) take exactly one mild
+finiteness side hypothesis \verb|fin_cd| --- shape-compatible
+with the \verb|fin_F| of Theorem 1 (\verb|CD_FN_unavoidable|) ---
+and no other meta-level assumptions.  No HOL axioms, no locale
+axioms on the impossibility chain.
+
+The proof routes directly through Theorem 1: \verb|CD_solvable|
+extracts a \verb|produces_valid_F| witness, which Theorem 1
+defeats with an admissible Byzantine adversary.  The paper's
+``Consensus $\preceq$ Black\_Box $\preceq$ CD + FLP'' chain is
+preserved as paper-faithful documentation (R1, R2 in
+\verb|Reductions.thy|; the BlackBox impossibility
+\verb|BlackBox_unsolvable| in \verb|BlackBox_Unsolvable.thy|; and
+the FLP impossibility \verb|flp_consensus_unsolvable| in
+\verb|FLP_Consensus.thy|, proven against the AFP entry's
+\verb|ConsensusFails|) but is not on the critical path of the
+headline theorems.
 
 \medskip
 
@@ -99,10 +108,16 @@ The theories are intended to be read in the following order:
   \item \verb|Theorems_1_2|: paper Section 4.1, Theorems 1 and 2,
         with explicit Byzantine adversary constructions using
         fresh natural numbers.
+  \item \verb|BlackBox_Unsolvable|: a proof of
+        $\lnot$\,\verb|BlackBox_solvable procs correct| by direct
+        reduction to Theorem 1 via the BB-to-CD projection.
+        Discharges what was previously a meta-level hypothesis on
+        Theorems 3/4/5.
   \item \verb|FLP_Consensus|: the FLP-style consensus predicate
         with the impossibility proven against the AFP entry's
-        \verb|ConsensusFails|, and the bridge predicate
-        \verb|bb_realizes_flp_consensus|.
+        \verb|ConsensusFails|.  Retained as the AFP-FLP citation
+        motivating the paper's chosen chain; not on the
+        impossibility path of this development.
   \item \verb|Impossibility|: paper Section 4.2, Theorems 3, 4,
         5 -- the headline results.
   \item \verb|Foundation_Vacuity|: a regression diagnostic

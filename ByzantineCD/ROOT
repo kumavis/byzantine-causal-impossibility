@@ -21,6 +21,7 @@ session ByzantineCD (AFP) = FLP +
     BlackBox
     Reductions
     Theorems_1_2
+    BlackBox_Unsolvable
     FLP_Consensus
     Impossibility
     Foundation_Vacuity
