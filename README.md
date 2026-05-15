@@ -66,6 +66,21 @@ In scope, fully proved:
 - **Theorem 4** (`CD_impossible_broadcast`): same, broadcast.  Same
   side condition.
 - **Theorem 5** (`CD_impossible_multicast`): trivial corollary of 3.
+- **Theorem 15** (`CD_harder_than_Consensus` in `CD_vs_Consensus.thy`):
+  in a Byzantine setting, CD is unsolvable but abstract Consensus has
+  a HOL witness, so no reduction from CD to Consensus exists.  Fully
+  proven from the existing CD impossibility + `exists_consensus_alg`
+  in `Foundation_Vacuity.thy`.
+
+Partially formalised:
+
+- **Theorem 16** (Consensus impossibility half exported as
+  `T16_Consensus_unsolvable_part`): half (b) — Consensus is unsolvable
+  under crash failures — is the proven `flp_consensus_unsolvable`
+  against AFP's `ConsensusFails`.  Half (a) — CD is solvable under
+  crash failures — requires modelling explicit messages and in-transit
+  history, which our abstract `'p cd_solver` signature does not capture;
+  documented as deliberately out of scope in `CD_vs_Consensus.thy`.
 
 Out of scope (left as deliberate extension points; see `Events.thy`'s
 event datatype, which has a `Send`/`Receive` peer parameter ready for the
@@ -73,7 +88,7 @@ B-happened-before relation):
 
 - Theorems 6–8 (B-happened-before positive results)
 - Theorems 9–14 (cryptography-allowing variants)
-- Theorems 15–16 (CD vs Consensus relationships)
+- Theorem 16's CD-solvable-under-crash half (model extension required)
 
 ## File structure
 
@@ -90,6 +105,7 @@ B-happened-before relation):
 | `BlackBox_Unsolvable.thy`  | *Proves* `¬ BlackBox_solvable procs correct` by direct reduction to Theorem 1 via the BB→CD projection.  This discharges what was previously the `bb_unsolv` hypothesis on Theorems 3/4/5. |
 | `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`.  Retained as the AFP-FLP citation that motivates the paper's chain; not used in the headline impossibility proof. |
 | `Foundation_Vacuity.thy`   | Regression diagnostic: retains the witness showing the abstract `solves_Consensus` predicate alone admits a trivial HOL solver. |
+| `CD_vs_Consensus.thy`      | Theorem 15 (Byzantine: CD harder than Consensus) — fully proven from the existing CD impossibility and the abstract Consensus witness.  Theorem 16 (crash failures: Consensus harder than CD) — Consensus half exported from `flp_consensus_unsolvable`; the CD-solvable-under-crash half is documented as out of scope (requires a richer model with explicit messages). |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
 

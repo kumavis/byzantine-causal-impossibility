@@ -25,6 +25,7 @@ session ByzantineCD (AFP) = FLP +
     FLP_Consensus
     Impossibility
     Foundation_Vacuity
+    CD_vs_Consensus
   document_files
     "root.tex"
     "root.bib"
