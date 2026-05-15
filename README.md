@@ -82,11 +82,22 @@ Partially formalised:
   history, which our abstract `'p cd_solver` signature does not capture;
   documented as deliberately out of scope in `CD_vs_Consensus.thy`.
 
-Out of scope (left as deliberate extension points; see `Events.thy`'s
-event datatype, which has a `Send`/`Receive` peer parameter ready for the
-B-happened-before relation):
+Foundation laid (theorems out of scope):
 
-- Theorems 6–8 (B-happened-before positive results)
+- **Theorems 6, 7, 8** (paper §4.3): `BHB.thy` provides the Byzantine
+  happened-before relation, `valid_B`, `produces_valid_F_B`, and
+  `CD_B_solvable`, plus structural lemmas (`bhb` is a sub-relation of
+  `hb` against the same history).  T6 and T7 are positive results
+  whose proofs construct algorithms using BRU/BCB/BRB; T8 depends on
+  the unachievability of BRM.  All three require a communication-level
+  model extension not present in this development.
+
+Out of scope (left as deliberate extension points):
+
+- Theorems 6, 7, 8 themselves (B-happened-before results; definitional
+  foundation laid in `BHB.thy`, but the algorithm constructions and
+  the multicast impossibility argument require a communication model
+  not present here)
 - Theorems 9–14 (cryptography-allowing variants)
 - Theorem 16's CD-solvable-under-crash half (model extension required)
 
@@ -106,6 +117,7 @@ B-happened-before relation):
 | `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`.  Retained as the AFP-FLP citation that motivates the paper's chain; not used in the headline impossibility proof. |
 | `Foundation_Vacuity.thy`   | Regression diagnostic: retains the witness showing the abstract `solves_Consensus` predicate alone admits a trivial HOL solver. |
 | `CD_vs_Consensus.thy`      | Theorem 15 (Byzantine: CD harder than Consensus) — fully proven from the existing CD impossibility and the abstract Consensus witness.  Theorem 16 (crash failures: Consensus harder than CD) — Consensus half exported from `flp_consensus_unsolvable`; the CD-solvable-under-crash half is documented as out of scope (requires a richer model with explicit messages). |
+| `BHB.thy`                  | The Byzantine happened-before relation (paper Definition 3) and the CD_B problem (paper Definition 6).  Definitional foundation for paper Section 4.3.  Theorems 6, 7, 8 themselves are out of scope: T6 and T7 are positive results whose proofs construct algorithms using BRU/BCB/BRB communication primitives; T8 depends on the unachievability of BRM.  Same out-of-scope band as T16's positive half. |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
 
