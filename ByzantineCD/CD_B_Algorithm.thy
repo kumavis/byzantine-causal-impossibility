@@ -364,6 +364,74 @@ corollary CD_B_solvable_under_correct_reporting:
   shows "\<exists>alg. produces_valid_F_B_recv correct alg"
   using naive_cd_B_alg_correct by blast
 
+section \<open>Theorems 6 and 7: CD_B solvable under unicast and broadcast\<close>
+
+text \<open>Paper, Theorem 6 (Section 4.3.2, "possible"):
+\begin{quote}
+``It is possible to solve causality determination (Definition 6) as
+specified by \<open>CD_B(E, F, e_i^*)\<close>, now defined in terms of the
+\<open>\<rightarrow>_B\<close> relation, in an asynchronous unicast-based message passing
+system with one or more Byzantine processes.''
+\end{quote}
+
+Paper, Theorem 7 (Section 4.3.1, "possible"):
+\begin{quote}
+``It is possible to solve causality determination (Definition 6) as
+specified by \<open>CD_B(E, F, e_i^*)\<close>, now defined in terms of the
+\<open>\<rightarrow>_B\<close> relation, in an asynchronous broadcast-based message passing
+system with one or more Byzantine processes.''
+\end{quote}
+
+At the abstraction level of this theory, Theorems 6 and 7 are the
+same statement: ``in mode \<open>m\<close>, some algorithm of type
+@{type cd_alg_with_recv} satisfies @{const produces_valid_F_B_recv}''.
+Both are direct corollaries of @{thm naive_cd_B_alg_correct} since
+the abstract correctness of the naive algorithm does not depend on
+the mode.
+
+\textit{Where the paper's two theorems differ.}  The paper's
+distinction between T6 and T7 lies in which communication primitive
+discharges @{const correct_reporting}:
+
+\begin{itemize}
+  \item T6 (unicast): correct processes report their local
+        histories via point-to-point messages
+        (Byzantine Reliable Unicast, trivially achievable since
+        point-to-point is already reliable in the absence of
+        Byzantine senders along the path), supplemented by
+        simulated broadcasts of control information after
+        application unicast send events.
+  \item T7 (broadcast): correct processes report via Byzantine
+        Causal Broadcast over Byzantine Reliable Broadcast
+        (BCB-over-BRB), which guarantees that any message a correct
+        process delivers was previously delivered by all other
+        correct processes in the causal order required to
+        reconstruct the history.
+\end{itemize}
+
+Both primitives are operational and require a communication-level
+model -- explicit messages, channels, fairness -- not present in
+this development.  We therefore state Theorems 6 and 7 as
+mode-tagged existential statements about
+@{const produces_valid_F_B_recv}, leaving the operational discharge
+of @{const correct_reporting} to whoever extends the development
+with a communication model.\<close>
+
+definition CD_B_solvable_with_recv ::
+  "comm_mode \<Rightarrow> 'p set \<Rightarrow> bool" where
+  "CD_B_solvable_with_recv m C \<longleftrightarrow>
+     (\<exists>alg. produces_valid_F_B_recv C alg)"
+
+theorem CD_B_solvable_unicast:
+  shows "CD_B_solvable_with_recv Unicast correct"
+  unfolding CD_B_solvable_with_recv_def
+  by (rule CD_B_solvable_under_correct_reporting)
+
+theorem CD_B_solvable_broadcast:
+  shows "CD_B_solvable_with_recv Broadcast correct"
+  unfolding CD_B_solvable_with_recv_def
+  by (rule CD_B_solvable_under_correct_reporting)
+
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
 end
