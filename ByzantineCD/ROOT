@@ -29,6 +29,7 @@ session ByzantineCD (AFP) = FLP +
     BHB
     CD_B_Algorithm
     Delivery
+    Execution_Model
   document_files
     "root.tex"
     "root.bib"
