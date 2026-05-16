@@ -19,7 +19,7 @@ Wilhelm-Weidner, Peters, Nestmann, 2025-03).
 ## Status
 
 The session compiles against **Isabelle 2025-2 + AFP snapshot
-`afp-2026-05-13`** in **~4 s** wall time, **17 theory files** at
+`afp-2026-05-13`** in **~4 s** wall time, **18 theory files** at
 100%, **0** `sorry` / `oops` / `apply` / `sledgehammer` in any proof.
 
 Reproducing:
@@ -41,8 +41,8 @@ theorem in the paper and what remains as future work.
 
 ## Scope
 
-15 of the paper's 18 theorems are fully proven, 3 are out of scope
-(see [`ROADMAP.md`](ROADMAP.md) for the per-theorem status table).
+All 18 of the paper's theorems are fully proven (see
+[`ROADMAP.md`](ROADMAP.md) for the per-theorem status table).
 Highlights:
 
 Fully proven:
@@ -87,6 +87,19 @@ Fully proven:
   in a fair infinite run eventually has a matching `Receive`.
   Composes deadlock freedom + fairness assumption into a per-event
   liveness guarantee.
+- **Theorems 9–14** (paper §4.4 + §4.5, `CD_with_Crypto.thy`):
+  CD impossibility under unicast / broadcast / multicast even
+  with cryptography (T9, T10, T11) — direct corollaries of
+  T3/T4/T5 since the Theorem-1 FN attack is crypto-independent.
+  CD_B possibility under unicast / broadcast / multicast with
+  cryptography (T12, T13, T14) — T12/T13 are corollaries of
+  T6/T7 (crypto does not change the conclusion), while T14 is
+  the genuinely new content: with crypto, multicast becomes
+  solvable under BHB (whereas T8 said it was impossible without).
+  At our abstraction level, crypto plays the same role as
+  BRU/BCB-over-BRB do for T6/T7: it discharges
+  `correct_reporting` under multicast.  The cryptographic
+  primitive layer itself is below our abstraction.
 - **Theorems 17, 18** (paper §5.2, `CO.thy`):
   CD ↔ CO interreducibility in the Byzantine model (T17), and CO
   subject to FN and FN-or-FP for internal-event witnesses (T18).
@@ -97,11 +110,20 @@ Fully proven:
   by routing through `CD_impossible_*` + `CO_impossible_*` (both
   sides impossible, hence interreducible).
 
-Out of scope:
+Out of scope (paper-adjacent, would deepen the mechanisation):
 
-- **Theorems 9–14** (paper §4.4): cryptography-allowing variants.
-  Possibility and impossibility results under digital signatures and
-  hash chains; require a cryptographic primitive model.
+- **Concrete cryptographic primitive layer.**  `CD_with_Crypto.thy`
+  discharges T9–T14 as corollaries treating crypto as an
+  off-the-shelf primitive (the same way the paper cites Bracha
+  1987 for BRB).  A faithful mechanisation of digital signatures,
+  collision-resistant hashes, and recursive hash histories would
+  let us state the paper's quantitative FP-prevention qualifier
+  (FP prevented for `t < n/3` under Bracha's BRB).
+- **Operational primitives behind T6/T7.**  Byzantine Reliable
+  Unicast and Byzantine Causal Broadcast (over Byzantine Reliable
+  Broadcast) discharge `correct_reporting` for T6/T7; we leave
+  the operational discharge layer out of scope at the same
+  abstraction as crypto.
 
 ## File structure
 
@@ -124,6 +146,7 @@ Out of scope:
 | `Delivery.thy`             | Operational delivery layer: `messages_delivered_among` as the structural correct-to-correct delivery property; `mode_admissible` refined to bundle this with `wf_history`; operational versions of T6/T7. |
 | `Execution_Model.thy`      | Inductive `run_step` (internal/send/recv/byzantine) with in-flight buffer.  Proves: `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_unicast`/`_broadcast` (closes the Phase 5 gap), `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
 | `Liveness.thy`             | Real-world fairness on infinite executions: `infinite_run` (a `nat ⇒ 'p config` with adjacent `run_step`), `fair_run` (every buffered triple eventually leaves), and the liveness theorem `fair_run_delivers` (every correct-to-correct `Send` in some `E i` has a matching `Receive` in some `E j`).  Key technical lemma: `step_removes_triple_is_recv` — case analysis showing only `step_recv` can remove a buffer triple, and it adds the matching `Receive`. |
+| `CD_with_Crypto.thy`       | Theorems 9–14 (paper §4.4 + §4.5).  CD impossibility with crypto (T9, T10, T11) as corollaries of T3/T4/T5; CD_B possibility with crypto (T12, T13) as corollaries of T6/T7; T14 (the genuinely new multicast-with-crypto possibility) via the naive algorithm under `correct_reporting`.  Crypto is treated at the same abstraction as BRU/BCB-over-BRB: it discharges `correct_reporting` operationally, and the primitive layer is below our abstraction. |
 | `CO.thy`                   | Theorems 17 and 18 (paper §5.2).  Causal Ordering problem: `co_admissible` (CD admissibility restricted to receive-event targets), `produces_valid_F_CO`, `CO_solvable`.  Forward T17 (`CD_solvable_imp_CO_solvable`) constructive.  T18a (`CO_FN_unavoidable`) and T18b (`CO_FN_or_FP_unavoidable_internal`) by fresh-id constructions adapted to receive-event targets.  `CO_impossible_unicast`/`broadcast`/`multicast` plus `T17_CO_interreducible_with_CD` under Byzantine premises. |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |

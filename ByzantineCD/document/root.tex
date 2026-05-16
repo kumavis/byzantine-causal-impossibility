@@ -67,6 +67,16 @@ We formalise:
         concrete operational construction via an inductive
         \verb|run_step| with explicit in-flight buffer).  T8
         impossible under multicast.
+  \item Theorems 9 through 14 (paper Section 4.4 + 4.5):
+        cryptography variants.  Impossibilities (T9, T10, T11)
+        as direct corollaries of T3/T4/T5 -- the Theorem-1 FN
+        attack is crypto-independent.  Possibilities (T12, T13)
+        as direct corollaries of T6/T7.  T14 (the genuinely new
+        content: multicast \verb|+| crypto possible, whereas T8
+        said impossible without crypto) via the naive algorithm
+        under \verb|correct_reporting|.  Cryptography is treated
+        at the same abstraction the paper itself takes when
+        citing Bracha 1987 for BRB.
   \item Theorems 15 and 16 (paper Section 5.1): in the Byzantine
         model CD is harder than Consensus, directly from CD
         unsolvability and the abstract Consensus witness; in the
@@ -181,6 +191,10 @@ The theories are intended to be read in the following order:
         false-positive constructions; the impossibility of CO
         under all three communication modes; the interreducibility
         statement under Byzantine premises.
+  \item \verb|CD_with_Crypto|: paper Section 4.4 + 4.5, Theorems
+        9 through 14.  The six cryptography theorems, all as
+        corollaries of the corresponding non-crypto results plus
+        T14 as the new multicast-with-crypto-possibility case.
 \end{enumerate}
 
 \newpage
