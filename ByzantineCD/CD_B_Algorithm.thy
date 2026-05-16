@@ -59,7 +59,7 @@ definition correct_reporting ::
   "'p set \<Rightarrow> ('p \<Rightarrow> 'p history_local) \<Rightarrow> 'p history \<Rightarrow> bool" where
   "correct_reporting C recv E \<longleftrightarrow> (\<forall>p \<in> C. recv p = E p)"
 
-text \<open>The CD_B correctness predicate for algorithms of the richer
+text \<open>The \<open>CD_B\<close> correctness predicate for algorithms of the richer
 type: the algorithm must produce a valid F (in the bhb sense) for
 every admissible adversary AND every received-view that respects
 correct reporting from correct processes.\<close>
@@ -320,10 +320,10 @@ next
     unfolding bhb_eval_def using noE noF by blast
 qed
 
-section \<open>The naive CD_B algorithm and its correctness\<close>
+section \<open>The naive \<open>CD_B\<close> algorithm and its correctness\<close>
 
 text \<open>The abstract correctness theorem: under correct reporting from
-correct processes, the naive algorithm \<open>F = recv\<close> satisfies CD_B (in
+correct processes, the naive algorithm \<open>F = recv\<close> satisfies \<open>CD_B\<close> (in
 the bhb sense).  This is the algorithmic core of paper Theorems 6
 and 7.\<close>
 
@@ -364,7 +364,7 @@ corollary CD_B_solvable_under_correct_reporting:
   shows "\<exists>alg. produces_valid_F_B_recv correct alg"
   using naive_cd_B_alg_correct by blast
 
-section \<open>Theorems 6 and 7: CD_B solvable under unicast and broadcast\<close>
+section \<open>Theorems 6 and 7: \<open>CD_B\<close> solvable under unicast and broadcast\<close>
 
 text \<open>Paper, Theorem 6 (Section 4.3.2, "possible"):
 \begin{quote}
@@ -432,7 +432,7 @@ theorem CD_B_solvable_broadcast:
   unfolding CD_B_solvable_with_recv_def
   by (rule CD_B_solvable_under_correct_reporting)
 
-section \<open>Theorem 8: CD_B impossible under multicast\<close>
+section \<open>Theorem 8: \<open>CD_B\<close> impossible under multicast\<close>
 
 text \<open>Paper, Theorem 8 (Section 4.3, "impossible"):
 \begin{quote}
@@ -458,7 +458,7 @@ fresh-id adversary construction of @{theory_text \<open>Theorems_1_2.thy\<close>
 specialised so the witness chain runs through two distinct
 \emph{correct} processes \<open>p_c\<close> and \<open>p_i\<close> (rather than a Byzantine
 sender).  The chain becomes a genuine \<open>\<rightarrow>_B\<close> chain in \<open>E\<close>; if the
-algorithm's output \<open>F\<close> has finite events_of, a fresh message id
+algorithm's output \<open>F\<close> has finite \<open>events_of\<close>, a fresh message id
 exists outside \<open>F\<close>, and the bhb chain in \<open>E\<close> is missing in \<open>F\<close> --
 a bhb-false-negative.
 
@@ -613,7 +613,7 @@ proof
   hence FN: "false_negative_B correct (adv_E ?adv) ?F (adv_e_star ?adv)"
     unfolding false_negative_B_def by blast
 
-  \<comment> \<open>But the alleged solver claims valid_B on this very adversary.\<close>
+  \<comment> \<open>But the alleged solver claims \<open>valid_B\<close> on this very adversary.\<close>
   have F_eq:
     "?F = fst (alg recv (adv_i ?adv) (adv_e_star ?adv))"
     using adv_eq by simp
@@ -633,23 +633,23 @@ qed
 text \<open>Mapping to paper Theorem 8.  The paper says: under multicast,
 @{const correct_reporting} cannot be guaranteed (BRM is
 unachievable), so an algorithm would have to work without it -- but
-the previous theorem says no algorithm does.  Hence CD_B is
+the previous theorem says no algorithm does.  Hence \<open>CD_B\<close> is
 unsolvable under multicast.
 
 The operational ``BRM is unachievable'' claim itself is out of
 scope (it requires modelling multicast groups, the BRM primitive,
 and the unachievability of BRM without Byzantine identification).
 We state the impossibility conditionally on the operational claim:
-``if BRM-style correct\<open>_reporting\<close> is not guaranteed under
-multicast, then CD_B is unsolvable under multicast in the
+``if BRM-style \<open>correct_reporting\<close> is not guaranteed under
+multicast, then \<open>CD_B\<close> is unsolvable under multicast in the
 \<open>recv\<close>-augmented signature''.
 
 In our predicate vocabulary:
 \begin{itemize}
-  \item ``correct\<open>_reporting\<close> guaranteed'' corresponds to using
+  \item ``\<open>correct_reporting\<close> guaranteed'' corresponds to using
         the \emph{conditional} predicate @{const produces_valid_F_B_recv}
         -- which is satisfiable (T6/T7).
-  \item ``correct\<open>_reporting\<close> not guaranteed'' corresponds to
+  \item ``\<open>correct_reporting\<close> not guaranteed'' corresponds to
         using the \emph{strong} predicate
         @{const produces_valid_F_B_recv_strong} -- which is
         \emph{not} satisfiable

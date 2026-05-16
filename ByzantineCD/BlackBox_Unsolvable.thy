@@ -88,7 +88,7 @@ proof
       using valid_at by (simp add: cd_def Let_def)
   qed
 
-  \<comment> \<open>Step 2: package the byz_cor_distinct hypothesis Theorem 1 wants.\<close>
+  \<comment> \<open>Step 2: package the \<open>byz_cor_distinct\<close> hypothesis Theorem 1 wants.\<close>
   have byz_cor_distinct:
     "\<exists>p_i p_b. p_i \<in> correct \<and> p_b \<in> byzantine \<and> p_b \<noteq> p_i"
   proof -
@@ -127,7 +127,7 @@ proof
     using CD_FN_unavoidable[where alg = cd, OF byz_cor_distinct fin_cd]
     by blast
 
-  \<comment> \<open>Step 5: false negative contradicts produces_valid_F.\<close>
+  \<comment> \<open>Step 5: false negative contradicts \<open>produces_valid_F\<close>.\<close>
   have valid_at_adv:
     "valid (adv_E adv)
            (fst (cd (adv_i adv) (adv_e_star adv)))

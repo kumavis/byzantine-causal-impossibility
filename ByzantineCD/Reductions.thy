@@ -423,7 +423,7 @@ byzantineSystem} with the single named meta-level axiom
 contrapositive ``producing valid F is impossible without identifying
 the correct set'' (paper Section 4.2).  Together with the
 constructive \<open>bb_from_cd_with_L\<close> defined below it gives R2 (BB
-\<preceq> CD), which is what the paper actually proves to establish
+\<open>\<preceq>\<close> CD), which is what the paper actually proves to establish
 Theorems 3/4/5.
 
 \textit{Note on critical path.}  After the discharge of the BB

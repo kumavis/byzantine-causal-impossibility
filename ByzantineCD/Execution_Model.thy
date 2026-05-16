@@ -339,9 +339,9 @@ next
     assume pc: "p' \<in> correct" and qc: "q' \<in> correct"
        and sevent: "Send p' n' q' m' \<in> events_of (cfg_hist cfg')"
     \<comment> \<open>A correct-Send cannot be the newly added Byzantine event:
-        the new event's @{term proc_of} is @{term p} \<in> byzantine,
+        the new event's @{term proc_of} is @{term p} \<open>\<in>\<close> byzantine,
         whereas the Send's @{term proc_of} would be @{term p'}
-        \<in> correct.\<close>
+        \<open>\<in>\<close> correct.\<close>
     have pby: "p \<in> byzantine" by (rule step_byzantine.hyps(1))
     have neq: "p' \<noteq> p"
       using pc pby partition_disj by blast
@@ -585,7 +585,7 @@ construction that produces such histories.  Composing with Phase 5's
 \<open>CD_B_solvable_unicast_operational\<close> and
 \<open>CD_B_solvable_broadcast_operational\<close> gives a fully derived chain
 
-  operational run \<longrightarrow> mode-admissible H \<longrightarrow> naive algorithm solves CD_B
+  \<open>operational run \<longrightarrow> mode-admissible H \<longrightarrow> naive algorithm solves CD_B\<close>
 
 with no remaining operational hypothesis.\<close>
 

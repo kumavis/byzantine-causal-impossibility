@@ -130,7 +130,7 @@ lemma correct_reporting_of_recv_from_history:
   unfolding correct_reporting_def
   by (simp add: recv_from_history_eq)
 
-section \<open>The naive algorithm as a CD_B-solver under operational delivery\<close>
+section \<open>The naive algorithm as a \<open>CD_B\<close>-solver under operational delivery\<close>
 
 text \<open>Composing @{thm correct_reporting_of_recv_from_history} with
 @{thm naive_cd_B_alg_correct} gives: under operational
@@ -167,12 +167,12 @@ section \<open>Operational versions of Theorems 6 and 7\<close>
 text \<open>Paper Theorem 6 (unicast) and Theorem 7 (broadcast)
 operationally: under the corresponding mode, the communication
 primitive achieves @{const messages_delivered_among}, so the naive
-algorithm solves CD_B.
+algorithm solves \<open>CD_B\<close>.
 
 \textit{What is mechanised here.}  Given the operational hypothesis
 @{prop "\<forall>H. mode_admissible m H \<longrightarrow> messages_delivered_among correct H"}
 -- ``every history reachable under mode \<open>m\<close> delivers correct-to-
-correct messages'' -- the naive algorithm solves CD_B in mode \<open>m\<close>.
+correct messages'' -- the naive algorithm solves \<open>CD_B\<close> in mode \<open>m\<close>.
 
 \textit{What remains operational.}  The hypothesis itself is the
 operational fact about the communication primitive.  For unicast it

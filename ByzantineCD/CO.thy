@@ -80,7 +80,7 @@ to devise an algorithm that collects the execution history \<open>E\<close>
 as \<open>F\<close> at \<open>p_r\<close> such that \<open>valid(F) = 1\<close> for
 \<open>e_r^* \<in> T(E)\<close> the receive event of \<open>m_2\<close>, with the
 algorithm using \<open>F\<close> to decide \<open>CO_Deliv(m_2)\<close>.''
-\end{quote>
+\end{quote}
 
 We mechanise this by reusing the CD admissibility predicate and
 restricting the target event to be a receive event.  The

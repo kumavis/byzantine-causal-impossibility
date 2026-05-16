@@ -225,9 +225,11 @@ A follow-up message refined the style requirements:
 
 ## Status (current)
 
-The original mission (Theorems 3, 4, 5) is fully delivered.  Further
-work has covered Theorems 1/2, 6/7/8, 15, and partially 16 — see
-[`ROADMAP.md`](ROADMAP.md) for the per-theorem status table.
+The original mission (Theorems 3, 4, 5) is fully delivered.  The
+project has since grown to cover **all 18 paper theorems** plus
+paper-adjacent companion theorems (deadlock freedom, fair-
+infinite-execution liveness).  See [`ROADMAP.md`](ROADMAP.md) for
+the per-theorem status table.
 
 | Component                                                       | Status |
 |-----------------------------------------------------------------|--------|
@@ -241,15 +243,19 @@ work has covered Theorems 1/2, 6/7/8, 15, and partially 16 — see
 | `BlackBox_Unsolvable.thy` — `¬ BlackBox_solvable`              | *Proven* (no longer a hypothesis); via projection to Theorem 1. |
 | `FLP_Consensus.thy` — FLP impossibility                         | *Proven* (no longer an axiom); via AFP's `ConsensusFails`. |
 | `Impossibility.thy` — Theorems 3, 4, 5                          | Done, in plain `byzantineSystem`, routed through Theorem 1, under `fin_cd`. |
-| `CD_vs_Consensus.thy` — Theorem 15 (full), Theorem 16 (partial) | T15 done; T16-Consensus-half exported. |
-| `BHB.thy` — Byzantine happened-before                            | Done.  bhb relation, valid_B, CD_B problem, structural lemmas. |
+| `CD_vs_Consensus.thy` — Theorem 15 (full), Theorem 16 (full)    | Both halves of T15 and T16 done. |
+| `BHB.thy` — Byzantine happened-before                           | Done.  bhb relation, valid_B, CD_B problem, structural lemmas. |
 | `CD_B_Algorithm.thy` — Theorems 6, 7, 8                         | Done.  Abstract `naive_cd_B_alg` correct under `correct_reporting`; T6, T7, T8 as mode-tagged corollaries / impossibilities. |
-| `Delivery.thy` — operational delivery layer                      | Done.  `messages_delivered_among`, refined `mode_admissible`, operational T6/T7. |
-| `Execution_Model.thy` — inductive `run_step` + invariants        | Done.  `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_*`, `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
+| `Delivery.thy` — operational delivery layer                     | Done.  `messages_delivered_among`, refined `mode_admissible`, operational T6/T7. |
+| `Execution_Model.thy` — inductive `run_step` + invariants       | Done.  `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_*`, `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
+| `Liveness.thy` — fair infinite executions                       | Done.  `infinite_run`, `fair_run`, `step_removes_triple_is_recv`, `fair_run_delivers` (liveness theorem). |
+| `CO.thy` — Theorems 17, 18                                      | Done.  CO problem as receive-event-target restriction of CD; T17 forward; T18 FN-unavoidable + FN-or-FP-unavoidable; CO impossibility + T17 interreducibility. |
+| `CD_with_Crypto.thy` — Theorems 9–14                            | Done.  T9/T10/T11 corollaries of T3/T4/T5; T12/T13 corollaries of T6/T7; T14 new (multicast + crypto possible). |
 | `Foundation_Vacuity.thy`                                        | Regression diagnostic. |
 | `ROOT`, `document/root.tex`, `document/root.bib`                | Done. |
 | Declarative Isar, no apply-style, no silent gaps                | Audited.  `grep` for `apply\|sorry\|oops\|sledgehammer\|try0` in `ByzantineCD/*.thy` returns nothing. |
-| `isabelle build -D .` succeeds                                  | **Verified** on Isabelle 2025-2 + AFP snapshot `afp-2026-05-13`.  Wall time ~3–4s, 15 theory files at 100%, 0 `sorry`/`oops`. |
+| `isabelle build -D .` succeeds                                  | **Verified** on Isabelle 2025-2 + AFP snapshot `afp-2026-05-13`.  Wall time ~4s, 18 theory files at 100%, 0 `sorry`/`oops`. |
+| `isabelle build -o document=pdf -D .` succeeds                  | **Verified** on the same toolchain.  Produces `document.pdf` (120 pages, A4).  A committed snapshot is at `dist/ByzantineCD.pdf`. |
 
 ### Build verification (post-hoc)
 
@@ -356,21 +362,20 @@ Both are documented at length in `README.md`.
 ## Out-of-scope items (preserved for future work)
 
 For the full, up-to-date breakdown see [`ROADMAP.md`](ROADMAP.md).
-Summary of what is still pending:
+All 18 paper theorems are now proven; the remaining work is
+paper-adjacent deepening rather than paper-required content:
 
-- **Theorems 9–14** — cryptography-allowing variants (paper §4.4).
-  Requires a cryptographic primitive model (digital signatures,
-  hash chains).
-- **Theorems 17, 18** — CO ↔ CD interreducibility and CO's FN/FP
-  limitations (paper §5.2).  Requires definitions of the Causal
-  Ordering problem.
-- **Theorem 16's CD-solvable-under-crash half** — requires a
-  crash-failure adversary model distinct from the existing
-  Byzantine model.
-- **Real-world fairness on the execution model** — Phase 8
-  proved deadlock freedom; the remaining liveness theorem
-  ("every fair infinite execution eventually has empty buffer")
-  needs coinductive streams.
+- **Concrete cryptographic primitive layer.**  `CD_with_Crypto.thy`
+  treats crypto the same way the paper itself does when citing
+  Bracha 1987 for BRB (as an off-the-shelf primitive whose role
+  is to discharge `correct_reporting`).  A faithful mechanisation
+  of digital signatures, collision-resistant hashes, and
+  recursive hash histories would let the development capture the
+  paper's quantitative FP-prevention qualifier ("FP prevented
+  for `t < n/3`" under Bracha's BRB).
+- **Operational primitives behind T6/T7 (BRU, BCB-over-BRB).**
+  These discharge `correct_reporting` for unicast and broadcast;
+  left out of scope at the same abstraction as crypto.
 
 Earlier out-of-scope items that have since been completed:
 
@@ -379,5 +384,14 @@ Earlier out-of-scope items that have since been completed:
   run-model layers (`BHB.thy`, `CD_B_Algorithm.thy`, `Delivery.thy`,
   `Execution_Model.thy`).
 - **Theorem 15** — proven fully (`CD_vs_Consensus.thy`).
-- **Theorem 16's Consensus-impossibility half** — exported as
-  `T16_Consensus_unsolvable_part`.
+- **Theorem 16** (both halves) — Consensus-impossibility half via
+  `T16_Consensus_unsolvable_part`; CD-solvable-under-crash half
+  via `T16_CD_solvable_under_crash_part`.
+- **Theorems 17, 18** — proven in `CO.thy`.
+- **Theorems 9–14** — proven in `CD_with_Crypto.thy` (T9/T10/T11
+  as crypto-independent corollaries of T3/T4/T5; T12/T13 as
+  corollaries of T6/T7; T14 as the genuinely new
+  multicast-with-crypto possibility).
+- **Real-world fairness on the execution model** — `Liveness.thy`
+  proves `fair_run_delivers` over infinite executions modelled as
+  `nat ⇒ 'p config`.

@@ -32,13 +32,18 @@ submitter would still need to do.
    ```sh
    isabelle build -d $AFP -o document=pdf -D ByzantineCD
    ```
-   produces `document.pdf` (47 pages, A4) under
-   `<presentation-dir>/AFP/ByzantineCD/document.pdf`.  The LaTeX
+   produces `document.pdf` (120 pages, A4) under
+   `<presentation-dir>/AFP/ByzantineCD/document.pdf`.  A pre-built
+   copy is committed at `dist/ByzantineCD.pdf`.  The LaTeX
    toolchain used for verification was a TinyTeX install
    (`~/.TinyTeX/bin/x86_64-linux/` in PATH) plus the packages
    `babel-english`, `csquotes`, `ulem`, and `txfonts` added via
-   `tlmgr install`.  Any TeXLive scheme that includes lualatex plus
-   those packages will work; AFP CI uses a full TeXLive.
+   `tlmgr install`.  Any TeXLive scheme that includes lualatex
+   plus those packages will work; AFP CI uses a full TeXLive.
+   `document/root.tex` loads `amsmath`, `amssymb`, `isabelle`,
+   `isabellesym`, and `pdfsetup`, plus a `\providecommand`
+   fallback for `\nexists` to keep the build robust on minimal
+   TeXLive installs.
 
 2. **AFP submission form fields** (for
    <https://www.isa-afp.org/submission/>):

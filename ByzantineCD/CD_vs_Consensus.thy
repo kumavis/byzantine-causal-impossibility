@@ -83,7 +83,7 @@ gives the formal content of Theorem 15:
 \begin{quote}
    \<open>solves_Consensus\<close>-witness exists, but no
    \<open>produces_valid_F\<close>-witness does, so the reduction
-   ``Consensus-solver \<longrightarrow> CD-solver'' is False.
+   \<open>``Consensus-solver \<longrightarrow> CD-solver'' is False.\<close>
 \end{quote}
 
 A note on idiom.  The paper uses the formal symbol \<open>\<preceq>\<close> for the
@@ -135,7 +135,7 @@ theorem CD_harder_than_Consensus:
   \<comment> \<open>Paper's headline conclusion of Theorem 15: ``the CD problem
       is harder than Consensus''.  In our setting this is the
       conjunction of (i) Consensus is abstractly solvable, (ii) CD
-      is unsolvable, (iii) hence no reduction CD \<preceq> Consensus
+      is unsolvable, (iii) hence no reduction \<open>CD \<preceq> Consensus\<close>
       exists.\<close>
   assumes byz_ne: "byzantine \<noteq> {}"
       and cor_ne: "correct \<noteq> {}"
@@ -178,13 +178,14 @@ asynchronous-distributed model of the AFP entry is the proven
 theorem @{thm flp_consensus_unsolvable} in @{theory_text
 \<open>FLP_Consensus.thy\<close>}.  We re-export it below.
 
-\textit{Half (1) -- formalised against the cd_alg_with_recv
-signature of CD_B_Algorithm.thy.}  The bare @{type cd_solver}
-signature (@{typ "'p \<Rightarrow> 'p event \<Rightarrow> 'p history \<times> bool"})
-gives the algorithm only the query indices @{term i} and @{term
-e_star}, with no way to ``collect'' messages.  The paper's
-``transitive propagation via execution messages'' argument requires
-a signature in which the algorithm has an input channel.  The
+\textit{Half (1) -- formalised against the \<open>cd_alg_with_recv\<close>
+signature of @{theory_text \<open>CD_B_Algorithm.thy\<close>}.}  The bare
+@{type cd_solver} signature
+(@{typ "'p \<Rightarrow> 'p event \<Rightarrow> 'p history \<times> bool"}) gives the
+algorithm only the query indices @{term i} and @{term e_star},
+with no way to ``collect'' messages.  The paper's ``transitive
+propagation via execution messages'' argument requires a signature
+in which the algorithm has an input channel.  The
 \<open>cd_alg_with_recv\<close> signature of @{theory_text
 \<open>CD_B_Algorithm.thy\<close>} provides exactly such a channel: an
 algorithm of that signature additionally takes a per-peer reported
@@ -307,7 +308,7 @@ text \<open>\<open>Consensus \<not>\<preceq> CD\<close> under crash failures (th
 conclusion of Theorem 16 in the paper, reading \<open>X \<preceq> Y\<close> as
 ``Y-solver yields X-solver''): a CD-solver in our richer signature
 exists, but no Consensus-solver in the FLP sense does, so the
-implication ``crash-CD-solver \<longrightarrow> Consensus-solver'' is False.\<close>
+implication ``crash-CD-solver \<open>\<longrightarrow>\<close> Consensus-solver'' is False.\<close>
 
 theorem T16_Consensus_not_reducible_to_CD_under_crash:
   shows "\<not> ((\<exists>alg. produces_valid_F_recv correct alg)

@@ -168,7 +168,7 @@ proof -
   qed
 qed
 
-section \<open>The CD_B problem (paper Definition 6)\<close>
+section \<open>The \<open>CD_B\<close> problem (paper Definition 6)\<close>
 
 text \<open>Paper, Section 4.3:
 \begin{quote}
@@ -230,7 +230,7 @@ proof -
   finally show ?thesis .
 qed
 
-text \<open>CD_B solver signature and the \<open>produces_valid_F_B\<close> /
+text \<open>\<open>CD_B\<close> solver signature and the \<open>produces_valid_F_B\<close> /
 \<open>CD_B_solvable\<close> predicates, parallel to those of @{theory_text \<open>CD.thy\<close>}.\<close>
 
 definition produces_valid_F_B ::

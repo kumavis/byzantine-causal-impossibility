@@ -5,12 +5,12 @@
 
   The six cryptography theorems of Section 4.4 of the paper:
 
-    Theorem 9  (\<S>4.4.1): CD impossible, multicast + crypto.
-    Theorem 10 (\<S>4.4.1): CD impossible, unicast + crypto.
-    Theorem 11 (\<S>4.4.1): CD impossible, broadcast + crypto.
-    Theorem 12 (\<S>4.5)  : CD_B possible, unicast + crypto.
-    Theorem 13 (\<S>4.5)  : CD_B possible, broadcast + crypto.
-    Theorem 14 (\<S>4.5)  : CD_B possible, multicast + crypto.
+    Theorem 9  (Section 4.4.1): CD impossible, multicast + crypto.
+    Theorem 10 (Section 4.4.1): CD impossible, unicast + crypto.
+    Theorem 11 (Section 4.4.1): CD impossible, broadcast + crypto.
+    Theorem 12 (Section 4.5)  : CD_B possible, unicast + crypto.
+    Theorem 13 (Section 4.5)  : CD_B possible, broadcast + crypto.
+    Theorem 14 (Section 4.5)  : CD_B possible, multicast + crypto.
 
   Status table from the paper (Table 1, with cryptography columns
   added on the right):
@@ -23,7 +23,7 @@
     Multicast   | T5   impos.  | T8   impossible  | T9   impos.  | T14  possible
   \<close>
 
-  The genuinely new content of \<S>4.4 is the lower-right cell: T14,
+  The genuinely new content of Section 4.4 is the lower-right cell: T14,
   CD_B possible under multicast \<^emph>\<open>with\<close> cryptography (whereas T8
   said it is impossible without).  The other five cells are
   corollaries of the corresponding non-crypto cells, with crypto
@@ -48,22 +48,22 @@
   -----------------------------------------------------------------
   Why we do not mechanise crypto primitives directly.
 
-  The paper's \<S>4.4 introduces two cryptographic ingredients:
+  The paper's Section 4.4 introduces two cryptographic ingredients:
 
-    (a) \<^bold>\<open>group encryption\<close> (\<S>4.4.1): a multicast group \<open>G\<close>
+    (a) \<^bold>\<open>group encryption\<close> (Section 4.4.1): a multicast group \<open>G\<close>
         shares a symmetric key \<open>K_G\<close>; senders encrypt to
         \<open>C_m = Enc(K_G, m)\<close> and broadcast \<open>(G, C_m)\<close> over BRB so
         every process can verify a send happened, while only group
         members can decrypt the content.
 
-    (b) \<^bold>\<open>recursive hash histories\<close> (\<S>4.4.2): each state carries a
+    (b) \<^bold>\<open>recursive hash histories\<close> (Section 4.4.2): each state carries a
         collision-resistant hash digest \<open>\<hat>s_i^x\<close> recursively
         defined over prior events; a Byzantine cannot fabricate a
         causal past without producing a matching hash.
 
   Both primitives are operational machinery whose role at our
   abstraction level is exactly the same as BRU/BCB-over-BRB in
-  \<S>4.3: they discharge the @{const correct_reporting} assumption
+  Section 4.3: they discharge the @{const correct_reporting} assumption
   for the relevant mode.  Faithful modelling of \<open>Enc\<close>, \<open>Dec\<close>,
   \<open>Sig\<close>, \<open>Verify\<close>, \<open>H\<close>, plus their unforgeability /
   collision-resistance properties, would require a multi-week
@@ -194,7 +194,7 @@ theorem T11_CD_impossible_broadcast_with_crypto:
   shows "\<not> CD_solvable Broadcast correct"
   by (rule CD_impossible_broadcast[OF byz_ne cor_ne fin_cd])
 
-section \<open>Theorem 12: CD_B possible, unicast + crypto\<close>
+section \<open>Theorem 12: CD\<open>_B\<close> possible, unicast + crypto\<close>
 
 text \<open>Paper, Theorem 12 (Section 4.5):
 \begin{quote}
@@ -203,7 +203,7 @@ as specified by \<open>CD_B(E, F, e_i^*)\<close>, now defined in terms of the
 \<open>\<rightarrow>_B\<close> relation, in an asynchronous unicast-based message
 passing system with one or more Byzantine processes when using
 cryptography.''
-\end{quote>
+\end{quote}
 
 \textit{Paper's argument:} for the BHB version, ``only all true
 causal dependencies are faithfully transmitted'' along a causal
@@ -222,7 +222,7 @@ theorem T12_CD_B_solvable_unicast_with_crypto:
   shows "CD_B_solvable_with_recv Unicast correct"
   by (rule CD_B_solvable_unicast)
 
-section \<open>Theorem 13: CD_B possible, broadcast + crypto\<close>
+section \<open>Theorem 13: CD\<open>_B\<close> possible, broadcast + crypto\<close>
 
 text \<open>Paper, Theorem 13 (Section 4.5):
 \begin{quote}
@@ -240,7 +240,7 @@ theorem T13_CD_B_solvable_broadcast_with_crypto:
   shows "CD_B_solvable_with_recv Broadcast correct"
   by (rule CD_B_solvable_broadcast)
 
-section \<open>Theorem 14: CD_B possible, multicast + crypto\<close>
+section \<open>Theorem 14: CD\<open>_B\<close> possible, multicast + crypto\<close>
 
 text \<open>Paper, Theorem 14 (Section 4.5):
 \begin{quote}
@@ -251,7 +251,7 @@ passing system with one or more Byzantine processes when using
 cryptography.''
 \end{quote}
 
-\textit{The genuinely new content of \<S>4.4.}  Without cryptography
+\textit{The genuinely new content of Section 4.4.}  Without cryptography
 @{thm CD_B_unsolvable_multicast_abstract} (the \<open>recv\<close>-strong
 predicate) showed multicast was unsolvable because BRM is
 unachievable (\<open>t_G < |G|/3\<close> would require identifying the
