@@ -125,6 +125,7 @@ inductive run_step :: "'p config \<Rightarrow> 'p config \<Rightarrow> bool" whe
 | step_byzantine:
     "p \<in> byzantine
        \<Longrightarrow> proc_of new_event = p
+       \<Longrightarrow> seq_of new_event = Suc (length (cfg_hist cfg p))
        \<Longrightarrow> cfg' = cfg
               \<lparr> cfg_hist := (cfg_hist cfg)
                               (p := cfg_hist cfg p @ [new_event]) \<rparr>
@@ -327,11 +328,11 @@ next
     qed
   qed
 next
-  case (step_byzantine p new_event cfg' cfg)
+  case (step_byzantine p new_event cfg cfg')
   have ev: "events_of (cfg_hist cfg') = events_of (cfg_hist cfg) \<union> {new_event}"
-    using step_byzantine.hyps(3) events_of_extend by simp
+    using step_byzantine.hyps(4) events_of_extend by simp
   have buf: "cfg_inflight cfg' = cfg_inflight cfg"
-    using step_byzantine.hyps(3) by simp
+    using step_byzantine.hyps(4) by simp
   show ?case
   proof (unfold sends_match_inv_def, intro allI impI)
     fix p' n' q' m'
@@ -420,18 +421,197 @@ proof (unfold messages_delivered_among_def, intro allI impI)
     by blast
 qed
 
-text \<open>\textit{Note on \<open>wf_history\<close>.}  Phase 6 does not maintain
-@{const wf_history} as a run invariant.  A polished development
-would extend @{const run_step} with sequence-number side
-conditions (e.g.\ the Byzantine step would constrain
-\<open>seq_of new_event = Suc (length (cfg_hist cfg p))\<close>) and then
-prove \<open>run cfg \<Longrightarrow> wf_history (cfg_hist cfg)\<close>.  At that point
-\<open>fairness_implies_delivery\<close> upgrades to the headline corollary
+section \<open>wf\<open>_history\<close> is a run invariant\<close>
 
-  \<open>run cfg \<Longrightarrow> cfg_inflight cfg = empty_inflight
-       \<Longrightarrow> mode_admissible Unicast (cfg_hist cfg)\<close>
+text \<open>Each step appends one event whose @{const proc_of} matches the
+target process and whose @{const seq_of} is exactly
+\<open>Suc (length ...)\<close> of the existing per-process list.  These are
+exactly the @{const wf_history_local} conditions for an extension
+by one element, so each step preserves @{const wf_history}.
 
-closing the Phase 5 gap completely.\<close>
+For \<open>step_byzantine\<close> the @{const proc_of} and @{const seq_of}
+constraints are explicit premises; for \<open>step_internal\<close> /
+\<open>step_send\<close> / \<open>step_recv\<close> they follow from the event
+constructors used and the \<open>n = Suc (length ...)\<close> side condition.\<close>
+
+lemma wf_history_local_extend:
+  assumes wf:     "wf_history_local p es"
+      and proc_e: "proc_of e = p"
+      and seq_e:  "seq_of e = Suc (length es)"
+  shows   "wf_history_local p (es @ [e])"
+proof (unfold wf_history_local_def, intro conjI ballI allI impI)
+  fix ev assume mem: "ev \<in> set (es @ [e])"
+  show "proc_of ev = p"
+  proof (cases "ev \<in> set es")
+    case True
+    thus ?thesis using wf unfolding wf_history_local_def by blast
+  next
+    case False
+    with mem have "ev = e" by simp
+    thus ?thesis using proc_e by simp
+  qed
+next
+  fix k assume k: "k < length (es @ [e])"
+  show "seq_of ((es @ [e]) ! k) = Suc k"
+  proof (cases "k < length es")
+    case True
+    have "(es @ [e]) ! k = es ! k"
+      using True by (simp add: nth_append)
+    moreover have "seq_of (es ! k) = Suc k"
+      using wf True unfolding wf_history_local_def by blast
+    ultimately show ?thesis by simp
+  next
+    case False
+    with k have k_eq: "k = length es" by simp
+    have "(es @ [e]) ! k = e" using k_eq by simp
+    moreover have "seq_of e = Suc (length es)" by (rule seq_e)
+    ultimately show ?thesis using k_eq by simp
+  qed
+qed
+
+lemma wf_history_extend:
+  assumes wf:     "wf_history H"
+      and proc_e: "proc_of e = p"
+      and seq_e:  "seq_of e = Suc (length (H p))"
+  shows "wf_history (H(p := H p @ [e]))"
+proof (unfold wf_history_def, intro allI)
+  fix p'
+  show "wf_history_local p' ((H(p := H p @ [e])) p')"
+  proof (cases "p' = p")
+    case True
+    have "wf_history_local p (H p)"
+      using wf unfolding wf_history_def by blast
+    hence "wf_history_local p (H p @ [e])"
+      by (rule wf_history_local_extend[OF _ proc_e seq_e])
+    thus ?thesis using True by simp
+  next
+    case False
+    hence eq: "(H(p := H p @ [e])) p' = H p'" by simp
+    have "wf_history_local p' (H p')"
+      using wf unfolding wf_history_def by blast
+    thus ?thesis using eq by simp
+  qed
+qed
+
+lemma wf_history_init [simp]:
+  "wf_history (cfg_hist init_config)"
+  by (simp add: init_config_def wf_history_def wf_history_local_def)
+
+lemma wf_history_step:
+  assumes wf:   "wf_history (cfg_hist cfg)"
+      and step: "run_step cfg cfg'"
+  shows "wf_history (cfg_hist cfg')"
+  using step wf
+proof induction
+  case (step_internal p n cfg cfg')
+  have proc_new: "proc_of (Internal p n) = p" by simp
+  have seq_new: "seq_of (Internal p n) = Suc (length (cfg_hist cfg p))"
+    using step_internal.hyps(2) by simp
+  have wf_prev: "wf_history (cfg_hist cfg)" by (rule step_internal.prems)
+  have wf_ext:
+    "wf_history ((cfg_hist cfg)(p := cfg_hist cfg p @ [Internal p n]))"
+    by (rule wf_history_extend[OF wf_prev proc_new seq_new])
+  have cfg'_eq:
+    "cfg_hist cfg' = (cfg_hist cfg)(p := cfg_hist cfg p @ [Internal p n])"
+    using step_internal.hyps(3) by simp
+  show ?case using wf_ext cfg'_eq by metis
+next
+  case (step_send p q n cfg cfg' m)
+  have proc_new: "proc_of (Send p n q m) = p" by simp
+  have seq_new: "seq_of (Send p n q m) = Suc (length (cfg_hist cfg p))"
+    using step_send.hyps(3) by simp
+  have wf_prev: "wf_history (cfg_hist cfg)" by (rule step_send.prems)
+  have wf_ext:
+    "wf_history ((cfg_hist cfg)(p := cfg_hist cfg p @ [Send p n q m]))"
+    by (rule wf_history_extend[OF wf_prev proc_new seq_new])
+  have cfg'_eq:
+    "cfg_hist cfg' = (cfg_hist cfg)(p := cfg_hist cfg p @ [Send p n q m])"
+    using step_send.hyps(4) by simp
+  show ?case using wf_ext cfg'_eq by metis
+next
+  case (step_recv q p m cfg n cfg')
+  have proc_new: "proc_of (Receive q n p m) = q" by simp
+  have seq_new: "seq_of (Receive q n p m) = Suc (length (cfg_hist cfg q))"
+    using step_recv.hyps(4) by simp
+  have wf_prev: "wf_history (cfg_hist cfg)" by (rule step_recv.prems)
+  have wf_ext:
+    "wf_history ((cfg_hist cfg)(q := cfg_hist cfg q @ [Receive q n p m]))"
+    by (rule wf_history_extend[OF wf_prev proc_new seq_new])
+  have cfg'_eq:
+    "cfg_hist cfg' = (cfg_hist cfg)(q := cfg_hist cfg q @ [Receive q n p m])"
+    using step_recv.hyps(5) by simp
+  show ?case using wf_ext cfg'_eq by metis
+next
+  case (step_byzantine p new_event cfg cfg')
+  have proc_new: "proc_of new_event = p" by (rule step_byzantine.hyps(2))
+  have seq_new: "seq_of new_event = Suc (length (cfg_hist cfg p))"
+    by (rule step_byzantine.hyps(3))
+  have wf_prev: "wf_history (cfg_hist cfg)" by (rule step_byzantine.prems)
+  have wf_ext:
+    "wf_history ((cfg_hist cfg)(p := cfg_hist cfg p @ [new_event]))"
+    by (rule wf_history_extend[OF wf_prev proc_new seq_new])
+  have cfg'_eq:
+    "cfg_hist cfg' = (cfg_hist cfg)(p := cfg_hist cfg p @ [new_event])"
+    using step_byzantine.hyps(4) by simp
+  show ?case using wf_ext cfg'_eq by metis
+qed
+
+lemma wf_history_run:
+  assumes "run cfg"
+  shows "wf_history (cfg_hist cfg)"
+  using assms unfolding run_def
+proof (induction rule: rtranclp_induct)
+  case base
+  show ?case by simp
+next
+  case (step y z)
+  from wf_history_step[OF step.IH step.hyps(2)]
+  show ?case .
+qed
+
+section \<open>Closing the Phase 5 gap: run produces mode-admissible histories\<close>
+
+text \<open>The combined headline: any run that fairly completes (empty
+in-flight buffer at the end) produces a history that is
+@{const mode_admissible} under both @{term Unicast} and
+@{term Broadcast} -- because the run preserves @{const wf_history}
+(\<open>wf_history_run\<close>) and empty buffer gives
+@{const messages_delivered_among} (\<open>fairness_implies_delivery\<close>).
+
+This closes the Phase 5 gap: the unicast / broadcast cases of
+@{const mode_admissible} were the structural content of T6 / T7's
+operational claim, and we have now exhibited an operational
+construction that produces such histories.  Composing with Phase 5's
+\<open>CD_B_solvable_unicast_operational\<close> and
+\<open>CD_B_solvable_broadcast_operational\<close> gives a fully derived chain
+
+  operational run \<longrightarrow> mode-admissible H \<longrightarrow> naive algorithm solves CD_B
+
+with no remaining operational hypothesis.\<close>
+
+theorem run_completes_to_mode_admissible_unicast:
+  assumes run_cfg: "run cfg"
+      and empty:   "cfg_inflight cfg = empty_inflight"
+  shows "mode_admissible Unicast (cfg_hist cfg)"
+proof -
+  have wf: "wf_history (cfg_hist cfg)" by (rule wf_history_run[OF run_cfg])
+  have del: "messages_delivered_among correct (cfg_hist cfg)"
+    by (rule fairness_implies_delivery[OF run_cfg empty])
+  show ?thesis
+    unfolding mode_admissible_def using wf del by simp
+qed
+
+theorem run_completes_to_mode_admissible_broadcast:
+  assumes run_cfg: "run cfg"
+      and empty:   "cfg_inflight cfg = empty_inflight"
+  shows "mode_admissible Broadcast (cfg_hist cfg)"
+proof -
+  have wf: "wf_history (cfg_hist cfg)" by (rule wf_history_run[OF run_cfg])
+  have del: "messages_delivered_among correct (cfg_hist cfg)"
+    by (rule fairness_implies_delivery[OF run_cfg empty])
+  show ?thesis
+    unfolding mode_admissible_def using wf del by simp
+qed
 
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
