@@ -316,14 +316,17 @@ formalisation faithful to the prose) in each case.
 The AFP `FLP` entry models *crash-stop* failures with a record-shaped
 distributed-system locale.  Our development is parametric in the process
 type only, intentionally abstracted away from the AFP entry's record
-shapes.  The single touch-point — `flp_consensus_impossibility` — is a
-locale axiom that we expect to be discharged by interpretation outside
-the session, using the *Byzantine subsumes crash* embedding sketched
-above.  If you find that the AFP entry's notion of asynchrony is stricter
-than what the paper assumes (e.g., FIFO links are baked in but the paper
-allows reordering), the embedding will need to be adjusted at the same
-interpretation site — *not* in the body of this session.  Such an
-adjustment is local and well-defined.
+shapes.  The single touch-point is `flp_consensus_unsolvable` in
+`FLP_Consensus.thy` — a *proven* theorem (not an axiom), discharged
+against the AFP entry's `flpPseudoConsensus.ConsensusFails`.  An earlier
+revision of this development used a `flp_consensus_impossibility` locale
+axiom in place of the proven theorem; that axiom turned out to be
+unsatisfiable at the abstract-function level (see
+`Foundation_Vacuity.thy`) and was retired.  The headline impossibility
+theorems (3/4/5) no longer rely on any FLP axiom — they route directly
+through Theorem 1 (`CD_FN_unavoidable`); `flp_consensus_unsolvable` is
+retained as the AFP-FLP citation that motivates the paper's chosen
+chain.
 
 ## Reusability for the B-happened-before extensions
 

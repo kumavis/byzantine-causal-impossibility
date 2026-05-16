@@ -158,12 +158,14 @@ axiom turned out to be unsatisfiable in HOL (the pure-HOL function
 so denying it collapses to \<open>byzantine = {}\<close>).  See
 \<open>Foundation_Vacuity.thy\<close> for the machine-checked counter-example.
 The FLP impossibility is now proven (not axiomatised) against the
-AFP entry's \<open>ConsensusFails\<close> theorem in \<open>FLP_Consensus.thy\<close>; the
-chain from CD-solvability to a contradiction is closed in
-\<open>Impossibility.thy\<close> via the meta-level hypothesis
-\<open>\<not> BlackBox_solvable procs correct\<close> -- the paper's informal
-``Consensus \<preceq> BlackBox + FLP'' step, exposed as an explicit
-hypothesis on Theorems 3/4/5 rather than discharged operationally.\<close>
+AFP entry's \<open>ConsensusFails\<close> theorem in \<open>FLP_Consensus.thy\<close>.  The
+headline theorems 3/4/5 in \<open>Impossibility.thy\<close> no longer rely on
+any FLP-derived axiom or hypothesis at all -- they route directly
+through Theorem 1 (\<open>CD_FN_unavoidable\<close>) under a mild \<open>fin_cd\<close>
+side condition.  \<open>flp_consensus_unsolvable\<close> is retained as the
+AFP-FLP citation that motivates the paper's chosen chain
+\<open>Consensus \<preceq> BlackBox \<preceq> CD + FLP\<close>, but that chain is
+preserved as documentation rather than load-bearing.\<close>
 
 locale byzantineSystem = process_partition procs correct byzantine
   for procs correct byzantine :: "'p set"

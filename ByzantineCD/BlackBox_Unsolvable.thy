@@ -3,10 +3,19 @@
   Author:  Formalization of Misra & Kshemkalyani, "Byzantine-tolerant
            detection of causality" (Parallel Computing 124, 2025).
 
-  Discharges the meta-level hypothesis "\<not> BlackBox_solvable procs
-  correct" (named bb_unsolv in Impossibility.thy) via a direct
-  reduction to Theorem 1 (CD_FN_unavoidable, Theorems_1_2.thy) -- not
-  via FLP.
+  Proves "\<not> BlackBox_solvable procs correct" via a direct reduction
+  to Theorem 1 (CD_FN_unavoidable, Theorems_1_2.thy) -- not via FLP.
+
+  Role in the development.  An intermediate revision of
+  Impossibility.thy took "\<not> BlackBox_solvable procs correct" as an
+  explicit hypothesis (named bb_unsolv) of Theorems 3/4/5; this
+  theory was originally written to discharge that hypothesis.  The
+  current Impossibility.thy no longer takes such a hypothesis at all
+  -- Theorems 3/4/5 route directly through Theorem 1.  This theory
+  is therefore preserved as an alternative / paper-faithful
+  derivation of the BlackBox impossibility (and a useful waypoint
+  in the paper's section 4.2 chain Consensus \<preceq> BlackBox \<preceq> CD);
+  it is not on the critical path of the headline theorems.
 
   The observation: solves_BlackBox already demands that bb_F satisfies
   valid(E, bb_F, e_star) for every admissible adversary -- which is
@@ -18,12 +27,11 @@
   back through the projection to obtain a contradiction with the
   assumed BlackBox solvability.
 
-  This shortcut bypasses the paper's "Consensus \<preceq> BlackBox \<preceq> CD +
-  FLP" chain entirely.  The chain is still mathematically interesting
-  (and is preserved in FLP_Consensus.thy as the proven FLP-style
-  consensus impossibility), but for the headline CD impossibility we
-  only need Theorem 1, the BB-to-CD projection, and a finiteness side
-  condition.
+  Composing this theory with R2 (BB \<preceq> CD in Reductions.thy) and
+  the proven flp_consensus_unsolvable (FLP_Consensus.thy) yields the
+  paper's chain Consensus \<preceq> BlackBox \<preceq> CD + FLP as a fully-proven
+  alternative derivation of Theorems 3/4/5 -- preserved for paper
+  fidelity even though Impossibility.thy uses the shorter route.
 *)
 
 theory BlackBox_Unsolvable

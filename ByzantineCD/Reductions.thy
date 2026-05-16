@@ -33,9 +33,14 @@
           and discharge the reduction proper as a constructive proof
           from that assumption.
 
-  Composition Consensus \<preceq> BlackBox \<preceq> CD is then used in
-  Impossibility.thy together with the proven FLP impossibility
-  (FLP_Consensus.thy) to derive Theorems 3, 4, 5.
+  Composition Consensus \<preceq> BlackBox \<preceq> CD is preserved here as
+  paper-faithful documentation of the paper's section 4.2 chain.  It
+  is *not* on the critical path of Theorems 3, 4, 5: the headline
+  theorems in Impossibility.thy bypass this chain and route directly
+  through Theorem 1 (CD_FN_unavoidable) instead.  Together with
+  BlackBox_Unsolvable.thy and the proven FLP impossibility in
+  FLP_Consensus.thy, R1 + R2 still form a fully-proven alternative
+  derivation of Theorems 3/4/5 -- just not the one used.
 
   Key deviations from the paper:
 

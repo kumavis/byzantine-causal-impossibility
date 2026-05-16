@@ -36,16 +36,20 @@
   antecedent.  Carrying the bridge around (with its two type witnesses)
   hid this equivalence behind a more elaborate-looking definition.
 
-  Impossibility.thy therefore takes "\<not> BlackBox_solvable procs correct"
-  as the explicit meta-level hypothesis of Theorems 3/4/5.  Discharging
-  that hypothesis is exactly the paper's informal reduction
-  "Consensus \<preceq> BlackBox" (an asynchronous distributed protocol that
-  uses a BlackBox oracle and FLP-solves consensus); doing so within the
-  AFP FLP locale is the natural follow-on work item.
+  An earlier intermediate revision of Impossibility.thy took
+  "\<not> BlackBox_solvable procs correct" as an explicit meta-level
+  hypothesis of Theorems 3/4/5 (after retiring the bridge).  The
+  current Impossibility.thy no longer does: Theorems 3/4/5 route
+  directly through Theorem 1 (CD_FN_unavoidable) under a mild
+  fin_cd side condition, with no FLP-derived hypothesis on the
+  critical path.
 
-  flp_consensus_unsolvable below is the AFP-FLP citation that motivates
-  the hypothesis: it makes precise what "Consensus is unsolvable" means
-  in the formal model the hypothesis ultimately appeals to.
+  flp_consensus_unsolvable below is retained as the AFP-FLP citation
+  that motivates the paper's chosen chain Consensus \<preceq> BlackBox
+  \<preceq> CD + FLP -- a chain that is preserved as paper-faithful
+  documentation across Reductions.thy + BlackBox_Unsolvable.thy +
+  FLP_Consensus.thy but is not on the critical path of the headline
+  theorems.
 *)
 
 theory FLP_Consensus

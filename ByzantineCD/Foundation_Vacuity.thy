@@ -12,10 +12,13 @@
 
            That axiom has now been retired.  The FLP impossibility is
            imported instead through the AFP entry's ConsensusFails
-           theorem in FLP_Consensus.thy (proved, not assumed), and the
-           chain from CD solvability to a contradiction is closed in
-           Impossibility.thy via the explicit meta-level hypothesis
-           "\<not> BlackBox_solvable procs correct" on Theorems 3/4/5.
+           theorem in FLP_Consensus.thy (proved, not assumed).  The
+           headline theorems 3/4/5 in Impossibility.thy no longer
+           depend on any FLP-derived axiom or hypothesis: they route
+           directly through Theorem 1 (CD_FN_unavoidable) under a
+           mild fin_cd side condition.  flp_consensus_unsolvable is
+           retained as the AFP-FLP citation that motivates the
+           paper's chosen chain, but is not on the critical path.
 
            The witness lemmas in this file are kept as a regression
            test: they continue to prove that the abstract predicate

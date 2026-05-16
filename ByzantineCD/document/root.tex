@@ -47,11 +47,18 @@ We formalise:
         identifier.
   \item Theorems 3, 4, 5 (paper Section 4.2): the headline
         impossibility results for unicast, broadcast, and
-        multicast communication.  The proofs follow the paper's
-        chain $\mathrm{Consensus} \preceq \mathrm{Black\_Box} \preceq
-        \mathrm{CD}$, with the FLP impossibility imported from the
-        AFP entry \emph{FLP} (Bisping et al., 2025) as a proven
-        theorem.
+        multicast communication.  The proofs route directly
+        through Theorem 1 (\verb|CD_FN_unavoidable|) -- bypassing
+        the paper's $\mathrm{Consensus} \preceq \mathrm{Black\_Box}
+        \preceq \mathrm{CD} + \mathrm{FLP}$ chain at the
+        critical-path level.  The paper's chain is preserved as a
+        fully-proven alternative derivation
+        (\verb|Reductions.thy| + \verb|BlackBox_Unsolvable.thy| +
+        \verb|FLP_Consensus.thy|), with the FLP impossibility
+        imported from the AFP entry \emph{FLP}
+        (Bisping et al., 2025) as a proven theorem
+        (\verb|flp_consensus_unsolvable|, discharged against
+        \verb|flpPseudoConsensus.ConsensusFails|).
 \end{itemize}
 
 The development sits on top of the AFP entry \emph{FLP}.  The
