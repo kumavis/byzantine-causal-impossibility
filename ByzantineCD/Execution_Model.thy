@@ -613,6 +613,177 @@ proof -
     unfolding mode_admissible_def using wf del by simp
 qed
 
+section \<open>Deadlock freedom\<close>
+
+text \<open>The remaining gap below Phase 7 is the temporal-fairness gap:
+in a real network the buffer is drained by a fair scheduler over an
+infinite (or unboundedly long) execution.  Phase 8 takes one step
+toward closing it by establishing \emph{deadlock freedom}: from any
+configuration reachable via @{const run} with a non-empty in-flight
+buffer, a @{const run_step} can always be taken (specifically a
+\<open>step_recv\<close>).  Together with @{thm fairness_implies_delivery}
+this means: as long as the scheduler keeps making moves, drainage
+continues; the model never gets stuck.
+
+What is left for a true closure is the liveness theorem
+``every fair execution eventually has empty buffer''.  That requires
+a temporal predicate over infinite executions -- stream / coinductive
+machinery -- and is documented as the remaining out-of-scope step.\<close>
+
+subsection \<open>The buffer only contains correct-to-correct triples\<close>
+
+text \<open>Invariant \<open>buffer_correct_inv\<close>: every triple
+\<open>(p, q, m)\<close> in the buffer has both \<open>p \<in> correct\<close> and
+\<open>q \<in> correct\<close>.  This follows directly from the structure of
+@{const run_step}: only the \<open>step_send\<close> rule adds to the buffer,
+and its premises require both endpoints to be in @{term correct}.\<close>
+
+definition buffer_correct_inv :: "'p config \<Rightarrow> bool" where
+  "buffer_correct_inv cfg \<longleftrightarrow>
+     (\<forall>p q m. (p, q, m) \<in># cfg_inflight cfg \<longrightarrow> p \<in> correct \<and> q \<in> correct)"
+
+lemma buffer_correct_inv_init [simp]:
+  "buffer_correct_inv init_config"
+  by (simp add: buffer_correct_inv_def init_config_def empty_inflight_def)
+
+lemma buffer_correct_inv_step:
+  assumes "buffer_correct_inv cfg"
+      and "run_step cfg cfg'"
+  shows "buffer_correct_inv cfg'"
+  using assms(2,1)
+proof induction
+  case (step_internal p n cfg cfg')
+  have buf: "cfg_inflight cfg' = cfg_inflight cfg"
+    using step_internal.hyps(3) by simp
+  thus ?case
+    using step_internal.prems by (simp add: buffer_correct_inv_def)
+next
+  case (step_send p q n cfg cfg' m)
+  have buf: "cfg_inflight cfg' = cfg_inflight cfg \<union># {# (p, q, m) }"
+    using step_send.hyps(4) by simp
+  have pc: "p \<in> correct" by (rule step_send.hyps(1))
+  have qc: "q \<in> correct" by (rule step_send.hyps(2))
+  show ?case
+  proof (unfold buffer_correct_inv_def, intro allI impI)
+    fix p' q' m'
+    assume "(p', q', m') \<in># cfg_inflight cfg'"
+    hence in_buf: "0 < (cfg_inflight cfg \<union># {# (p, q, m) }) (p', q', m')"
+      using buf by simp
+    show "p' \<in> correct \<and> q' \<in> correct"
+    proof (cases "(p', q', m') = (p, q, m)")
+      case True
+      thus ?thesis using pc qc by simp
+    next
+      case nq: False
+      have neq: "(p, q, m) \<noteq> (p', q', m')" using nq by auto
+      have "(cfg_inflight cfg \<union># {# (p, q, m) }) (p', q', m')
+              = cfg_inflight cfg (p', q', m')"
+        using neq by simp
+      with in_buf have "0 < cfg_inflight cfg (p', q', m')" by simp
+      hence in_cfg: "(p', q', m') \<in># cfg_inflight cfg" by simp
+      show ?thesis
+        using step_send.prems in_cfg
+        unfolding buffer_correct_inv_def by blast
+    qed
+  qed
+next
+  case (step_recv q p m cfg n cfg')
+  have buf: "cfg_inflight cfg' = cfg_inflight cfg -# (p, q, m)"
+    using step_recv.hyps(5) by simp
+  show ?case
+  proof (unfold buffer_correct_inv_def, intro allI impI)
+    fix p' q' m'
+    assume "(p', q', m') \<in># cfg_inflight cfg'"
+    hence "0 < (cfg_inflight cfg -# (p, q, m)) (p', q', m')"
+      using buf by simp
+    \<comment> \<open>Removing one occurrence only decreases the count, so
+        \<open>(p',q',m')\<close> was already in the original buffer.\<close>
+    hence "0 < cfg_inflight cfg (p', q', m')"
+      by (auto split: if_split_asm)
+    hence in_cfg: "(p', q', m') \<in># cfg_inflight cfg" by simp
+    show "p' \<in> correct \<and> q' \<in> correct"
+      using step_recv.prems in_cfg
+      unfolding buffer_correct_inv_def by blast
+  qed
+next
+  case (step_byzantine p new_event cfg cfg')
+  have buf: "cfg_inflight cfg' = cfg_inflight cfg"
+    using step_byzantine.hyps(4) by simp
+  thus ?case
+    using step_byzantine.prems by (simp add: buffer_correct_inv_def)
+qed
+
+lemma buffer_correct_inv_run:
+  assumes "run cfg"
+  shows "buffer_correct_inv cfg"
+  using assms unfolding run_def
+proof (induction rule: rtranclp_induct)
+  case base
+  show ?case by simp
+next
+  case (step y z)
+  from buffer_correct_inv_step[OF step.IH step.hyps(2)]
+  show ?case .
+qed
+
+subsection \<open>Progress: a non-empty buffer always permits a step\<close>
+
+text \<open>From a run-reachable configuration with non-empty buffer, a
+\<open>step_recv\<close> rule application is always available: pick any
+buffered triple (it exists, since the buffer is non-empty), and
+the \<open>buffer_correct_inv\<close> invariant guarantees both endpoints are
+correct, which is exactly what \<open>step_recv\<close>'s premises require.\<close>
+
+lemma not_drained_can_step:
+  assumes run_cfg:  "run cfg"
+      and not_done: "cfg_inflight cfg \<noteq> empty_inflight"
+  shows "\<exists>cfg'. run_step cfg cfg'"
+proof -
+  have inv: "buffer_correct_inv cfg" by (rule buffer_correct_inv_run[OF run_cfg])
+  \<comment> \<open>A non-empty buffer means @{term "cfg_inflight cfg"} is not the
+      constantly-zero function, so some triple has positive count.\<close>
+  from not_done obtain p q m
+    where pos: "cfg_inflight cfg (p, q, m) > 0"
+  proof -
+    have "\<exists>x. cfg_inflight cfg x \<noteq> empty_inflight x"
+      using not_done by (auto simp: empty_inflight_def fun_eq_iff)
+    then obtain x where x_ne: "cfg_inflight cfg x \<noteq> 0"
+      by (auto simp: empty_inflight_def)
+    obtain p' q' m' where x_eq: "x = (p', q', m')"
+      by (cases x) auto
+    from x_ne x_eq have "cfg_inflight cfg (p', q', m') > 0" by simp
+    thus thesis by (rule that)
+  qed
+  hence in_buf: "(p, q, m) \<in># cfg_inflight cfg" by simp
+  from inv in_buf have pc: "p \<in> correct" and qc: "q \<in> correct"
+    by (auto simp: buffer_correct_inv_def)
+  let ?n = "Suc (length (cfg_hist cfg q))"
+  let ?cfg' =
+    "cfg \<lparr> cfg_hist := (cfg_hist cfg)
+                          (q := cfg_hist cfg q @ [Receive q ?n p m]),
+           cfg_inflight := cfg_inflight cfg -# (p, q, m) \<rparr>"
+  have "run_step cfg ?cfg'"
+    by (rule run_step.step_recv[OF qc pc in_buf refl refl])
+  thus ?thesis by blast
+qed
+
+text \<open>\textit{What this proves.}  @{thm not_drained_can_step}
+together with @{thm fairness_implies_delivery} gives the two halves
+of behavioural well-formedness for our model:
+
+\begin{itemize}
+  \item \<open>step_recv\<close> is applicable whenever the buffer is
+        non-empty (deadlock freedom).
+  \item Once the buffer is empty, the history is
+        @{const messages_delivered_among}-complete (delivery).
+\end{itemize}
+
+\textit{What remains.}  A real-world fairness theorem of the form
+``every fair infinite execution eventually has empty buffer'' would
+require modelling infinite executions as streams and stating
+fairness as a temporal predicate -- separate machinery the
+development can be parametric over.\<close>
+
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
 end
