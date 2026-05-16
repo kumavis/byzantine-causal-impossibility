@@ -16,12 +16,13 @@ submitter would still need to do.
 - The session builds green under `isabelle build -d $AFP -D .` with
   Isabelle 2025-2 and AFP snapshot `afp-2026-05-13` (the closest
   AFP-stable release at the time of preparation).  Wall time
-  ~3s; 16 theory files.
+  ~4s; 17 theory files.
 - All proofs are declarative Isar; zero `sorry`, `oops`, `apply`,
   `sledgehammer`, or `try0` anywhere in the development.
 - 15 of the paper's 18 theorems are fully proven; T9-T14
-  (cryptography) and the temporal-liveness side of the execution
-  model remain as future work.  See `ROADMAP.md`.
+  (cryptography) remain as future work.  Paper-adjacent
+  companion theorems include deadlock freedom and a fair-
+  infinite-execution liveness theorem.  See `ROADMAP.md`.
 
 ## What still needs to happen before submission
 

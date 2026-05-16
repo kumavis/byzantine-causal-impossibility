@@ -19,7 +19,7 @@ Wilhelm-Weidner, Peters, Nestmann, 2025-03).
 ## Status
 
 The session compiles against **Isabelle 2025-2 + AFP snapshot
-`afp-2026-05-13`** in **~3 s** wall time, **16 theory files** at
+`afp-2026-05-13`** in **~4 s** wall time, **17 theory files** at
 100%, **0** `sorry` / `oops` / `apply` / `sledgehammer` in any proof.
 
 Reproducing:
@@ -80,6 +80,13 @@ Fully proven:
   `F := recv` produces valid F whenever `recv = adv_E adv`, the
   abstract content of the paper's "transitive propagation via
   execution messages".
+- **Fair infinite executions** (paper-adjacent, `Liveness.thy`):
+  the liveness companion to `Execution_Model.thy`.  Infinite
+  executions modelled as `nat ⇒ 'p config`; the headline
+  `fair_run_delivers` theorem says every correct-to-correct `Send`
+  in a fair infinite run eventually has a matching `Receive`.
+  Composes deadlock freedom + fairness assumption into a per-event
+  liveness guarantee.
 - **Theorems 17, 18** (paper §5.2, `CO.thy`):
   CD ↔ CO interreducibility in the Byzantine model (T17), and CO
   subject to FN and FN-or-FP for internal-event witnesses (T18).
@@ -95,11 +102,6 @@ Out of scope:
 - **Theorems 9–14** (paper §4.4): cryptography-allowing variants.
   Possibility and impossibility results under digital signatures and
   hash chains; require a cryptographic primitive model.
-- **Real-world fairness on the execution model**: connecting the
-  inductive `run_step` to a streamed-execution model with temporal
-  fairness as a coinductive predicate.  Deadlock freedom is proven
-  (Phase 8); the liveness theorem "every fair infinite execution
-  eventually has empty buffer" is the remaining piece.
 
 ## File structure
 
@@ -121,6 +123,7 @@ Out of scope:
 | `CD_B_Algorithm.thy`       | Theorems 6/7/8 (paper §4.3).  Abstract algorithm with `recv` input; `naive_cd_B_alg` proven correct under `correct_reporting`; T6/T7 as mode-tagged corollaries; T8 as `produces_valid_F_B_recv_strong_unsolvable`. |
 | `Delivery.thy`             | Operational delivery layer: `messages_delivered_among` as the structural correct-to-correct delivery property; `mode_admissible` refined to bundle this with `wf_history`; operational versions of T6/T7. |
 | `Execution_Model.thy`      | Inductive `run_step` (internal/send/recv/byzantine) with in-flight buffer.  Proves: `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_unicast`/`_broadcast` (closes the Phase 5 gap), `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
+| `Liveness.thy`             | Real-world fairness on infinite executions: `infinite_run` (a `nat ⇒ 'p config` with adjacent `run_step`), `fair_run` (every buffered triple eventually leaves), and the liveness theorem `fair_run_delivers` (every correct-to-correct `Send` in some `E i` has a matching `Receive` in some `E j`).  Key technical lemma: `step_removes_triple_is_recv` — case analysis showing only `step_recv` can remove a buffer triple, and it adds the matching `Receive`. |
 | `CO.thy`                   | Theorems 17 and 18 (paper §5.2).  Causal Ordering problem: `co_admissible` (CD admissibility restricted to receive-event targets), `produces_valid_F_CO`, `CO_solvable`.  Forward T17 (`CD_solvable_imp_CO_solvable`) constructive.  T18a (`CO_FN_unavoidable`) and T18b (`CO_FN_or_FP_unavoidable_internal`) by fresh-id constructions adapted to receive-event targets.  `CO_impossible_unicast`/`broadcast`/`multicast` plus `T17_CO_interreducible_with_CD` under Byzantine premises. |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |

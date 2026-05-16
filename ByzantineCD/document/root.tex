@@ -165,6 +165,15 @@ The theories are intended to be read in the following order:
         and operational solvability under unicast/broadcast
         (Theorems 6, 7); impossibility under multicast (Theorem
         8); inductive execution model with deadlock freedom.
+  \item \verb|Liveness|: real-world fairness on the inductive
+        execution model.  Infinite executions modelled as
+        \verb|nat => 'p config| with a side condition that each
+        adjacent pair satisfies \verb|run_step|; the fairness
+        predicate \verb|fair_run| states that every buffered
+        triple eventually leaves the buffer; the headline
+        theorem \verb|fair_run_delivers| says every correct-to-
+        correct \verb|Send| in a fair infinite run has a matching
+        \verb|Receive| at some later step.
   \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
         causal-ordering problem CO as a strict restriction of CD
         to receive-event targets; the forward reduction CD

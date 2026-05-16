@@ -28,6 +28,11 @@ suggested order for the remaining work.
 
 **Scoreboard**: 15/18 fully proven · 3/18 not done.
 
+Plus paper-adjacent companion theorems: deadlock freedom on the
+inductive execution model (`Execution_Model.not_drained_can_step`)
+and liveness on infinite executions
+(`Liveness.fair_run_delivers`).
+
 ## Side hypotheses still on the critical path
 
 The mechanisation introduces exactly *one* mild side hypothesis on
@@ -49,26 +54,7 @@ theorems do not need it.)
 In suggested order (easiest → hardest), with notes on what each
 piece would require:
 
-### 1. Real-world fairness on the execution model
-
-Phase 8 proved deadlock freedom (`not_drained_can_step`).  The
-remaining temporal-liveness theorem is:
-
-> Every fair infinite execution eventually has empty buffer.
-
-Requires:
-- A coinductive definition of infinite executions (streams over
-  `run_step`).
-- A temporal fairness predicate: every in-flight triple eventually
-  scheduled for `step_recv`.
-- A liveness theorem.
-
-Substantial — proper coinduction territory.  Standard distributed-
-systems formalisation work but not small.  The current development
-is parametric over it (Phases 6–8 cover the *finite*-execution
-side: any run that fairly completes is mode-admissible).
-
-### 2. Theorems 9–14 (cryptography variants)
+### 1. Theorems 9–14 (cryptography variants)
 
 Paper §4.4.  The hardest remaining piece.  Requires:
 - A model of digital signatures (sign / verify, with `verify (sign
@@ -83,13 +69,10 @@ This is a multi-week project on its own.
 
 ## Possible immediate next step
 
-All 18 paper theorems are now formalised except cryptography
-(Theorems 9–14) and the temporal-liveness side of the execution
-model.  Of the two remaining, **fairness streams** is the smaller
-and more tractable next step: it builds on the existing inductive
-`run_step` of `Execution_Model.thy` (deadlock freedom is already
-proved) by adding a coinductive infinite-execution layer.  The
-cryptography theorems are a multi-week project of their own
-(digital signature and hash-function models, plus possibility
-constructions for T13/T14 and impossibility constructions for
-T9–T12).
+All 18 paper theorems are now formalised, plus the temporal-
+liveness companion to the inductive execution model
+(`Liveness.thy`, `fair_run_delivers`).  The only remaining gap is
+cryptography (Theorems 9–14): a multi-week project involving
+digital signature and hash-function models, possibility
+constructions for T13/T14, and impossibility constructions for
+T9–T12.
