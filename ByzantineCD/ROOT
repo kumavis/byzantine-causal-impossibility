@@ -28,6 +28,7 @@ session ByzantineCD (AFP) = FLP +
     CD_vs_Consensus
     BHB
     CD_B_Algorithm
+    Delivery
   document_files
     "root.tex"
     "root.bib"
