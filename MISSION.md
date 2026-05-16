@@ -223,23 +223,33 @@ A follow-up message refined the style requirements:
 > install any necessary dependencies to test locally, if you can't try
 > other means, if you can't: stop and report
 
-## Status (initial commit `524a4d2`)
+## Status (current)
 
-Delivered against the original request:
+The original mission (Theorems 3, 4, 5) is fully delivered.  Further
+work has covered Theorems 1/2, 6/7/8, 15, and partially 16 — see
+[`ROADMAP.md`](ROADMAP.md) for the per-theorem status table.
 
-| Item                                                          | Status                                                                                                                                                         |
-|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ByzantineSystem.thy`                                         | Done.  Locale `process_partition` + `byzantineSystem`; FLP impossibility imported as a locale axiom.  See `README.md` for the discharge sketch.                |
-| `Events.thy`                                                  | Done.  Datatype `'p event`, per-process and global histories, program-order, message-order, transitive closure `hb`, Boolean `hb_eval`.                        |
-| `CD.thy`                                                      | Done.  `valid`, `false_negative`, `false_positive`, adversary record, `produces_valid_F`, `CD_solvable`.                                                       |
-| `BlackBox.thy`                                                | Done.  `w_value`, `bb_output` record, `solves_BlackBox`, `BlackBox_solvable`.                                                                                  |
-| `Reductions.thy` — `consensus_reduces_to_blackbox`            | Done, fully constructive, declarative Isar.                                                                                                                    |
-| `Reductions.thy` — `blackbox_reduces_to_cd`                   | Done, *modulo* one named locale assumption `cd_can_identify_correct` in sub-locale `byzantineSystem_with_identification`.  Paper-faithfulness justified in `README.md`. |
-| `Impossibility.thy` — Theorems 3, 4, 5                        | Done.                                                                                                                                                          |
-| `ROOT`                                                        | Done.                                                                                                                                                          |
-| `README.md` — structure, strategy, gaps, assumptions          | Done.                                                                                                                                                          |
-| Declarative Isar throughout, no apply-style, no silent gaps   | Audited.  `grep` for `apply\|sorry\|oops\|sledgehammer\|try0` in `ByzantineCD/*.thy` returns nothing.                                                          |
-| `isabelle build -D .` succeeds with zero `sorry` / zero `oops`| **Verified** on Isabelle2025-2 + AFP snapshot 2026-05-13 (rebuild log: `0:00:02` ByzantineCD wall-time, all six theories at 100%).                              |
+| Component                                                       | Status |
+|-----------------------------------------------------------------|--------|
+| `ByzantineSystem.thy`                                           | Done.  Locale `process_partition` + `byzantineSystem`; FLP impossibility now imported as a proven theorem (not an axiom). |
+| `Events.thy`                                                    | Done.  Datatype `'p event`, per-process and global histories, program-order, message-order, transitive closure `hb`, Boolean `hb_eval`. |
+| `CD.thy`                                                        | Done.  `valid`, `false_negative`, `false_positive`, adversary record, `produces_valid_F`, `CD_solvable`. |
+| `BlackBox.thy`                                                  | Done.  `w_value`, `bb_output` record, `solves_BlackBox`, `BlackBox_solvable`. |
+| `Reductions.thy` — `consensus_reduces_to_blackbox` (R1)         | Done, constructive.  Preserved as paper-faithful documentation. |
+| `Reductions.thy` — `blackbox_reduces_to_cd` (R2)                | Done, modulo locale axiom `cd_can_identify_correct`.  *Off the critical path* of Theorems 3/4/5. |
+| `Theorems_1_2.thy` — Theorems 1, 2                              | Done. |
+| `BlackBox_Unsolvable.thy` — `¬ BlackBox_solvable`              | *Proven* (no longer a hypothesis); via projection to Theorem 1. |
+| `FLP_Consensus.thy` — FLP impossibility                         | *Proven* (no longer an axiom); via AFP's `ConsensusFails`. |
+| `Impossibility.thy` — Theorems 3, 4, 5                          | Done, in plain `byzantineSystem`, routed through Theorem 1, under `fin_cd`. |
+| `CD_vs_Consensus.thy` — Theorem 15 (full), Theorem 16 (partial) | T15 done; T16-Consensus-half exported. |
+| `BHB.thy` — Byzantine happened-before                            | Done.  bhb relation, valid_B, CD_B problem, structural lemmas. |
+| `CD_B_Algorithm.thy` — Theorems 6, 7, 8                         | Done.  Abstract `naive_cd_B_alg` correct under `correct_reporting`; T6, T7, T8 as mode-tagged corollaries / impossibilities. |
+| `Delivery.thy` — operational delivery layer                      | Done.  `messages_delivered_among`, refined `mode_admissible`, operational T6/T7. |
+| `Execution_Model.thy` — inductive `run_step` + invariants        | Done.  `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_*`, `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
+| `Foundation_Vacuity.thy`                                        | Regression diagnostic. |
+| `ROOT`, `document/root.tex`, `document/root.bib`                | Done. |
+| Declarative Isar, no apply-style, no silent gaps                | Audited.  `grep` for `apply\|sorry\|oops\|sledgehammer\|try0` in `ByzantineCD/*.thy` returns nothing. |
+| `isabelle build -D .` succeeds                                  | **Verified** on Isabelle 2025-2 + AFP snapshot `afp-2026-05-13`.  Wall time ~3–4s, 15 theory files at 100%, 0 `sorry`/`oops`. |
 
 ### Build verification (post-hoc)
 
@@ -345,11 +355,29 @@ Both are documented at length in `README.md`.
 
 ## Out-of-scope items (preserved for future work)
 
-- Theorems 6, 7, 8 — `B`-happened-before positive results.  The
-  `Events.thy` foundation is built with `Send` and `Receive` peer
-  fields exactly so that `bhb` can be defined inductively over
-  correct-process paths without reworking the event datatype.
-- Theorems 9 – 14 — cryptography-allowing variants.
-- Theorems 15, 16 — CD vs Consensus relationship results.
-- Theorems 1, 2 — corollaries; provable in the existing setup if
-  desired.
+For the full, up-to-date breakdown see [`ROADMAP.md`](ROADMAP.md).
+Summary of what is still pending:
+
+- **Theorems 9–14** — cryptography-allowing variants (paper §4.4).
+  Requires a cryptographic primitive model (digital signatures,
+  hash chains).
+- **Theorems 17, 18** — CO ↔ CD interreducibility and CO's FN/FP
+  limitations (paper §5.2).  Requires definitions of the Causal
+  Ordering problem.
+- **Theorem 16's CD-solvable-under-crash half** — requires a
+  crash-failure adversary model distinct from the existing
+  Byzantine model.
+- **Real-world fairness on the execution model** — Phase 8
+  proved deadlock freedom; the remaining liveness theorem
+  ("every fair infinite execution eventually has empty buffer")
+  needs coinductive streams.
+
+Earlier out-of-scope items that have since been completed:
+
+- **Theorems 1, 2** — proven constructively (`Theorems_1_2.thy`).
+- **Theorems 6, 7, 8** — proven at the abstract + operational +
+  run-model layers (`BHB.thy`, `CD_B_Algorithm.thy`, `Delivery.thy`,
+  `Execution_Model.thy`).
+- **Theorem 15** — proven fully (`CD_vs_Consensus.thy`).
+- **Theorem 16's Consensus-impossibility half** — exported as
+  `T16_Consensus_unsolvable_part`.

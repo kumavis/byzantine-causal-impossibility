@@ -19,18 +19,8 @@ Wilhelm-Weidner, Peters, Nestmann, 2025-03).
 ## Status
 
 The session compiles against **Isabelle 2025-2 + AFP snapshot
-`afp-2026-05-13`**.  Verified locally:
-
-```
-Running ByzantineCD ...
-ByzantineCD: theory ByzantineCD.ByzantineSystem 100% (0.102s ...)
-ByzantineCD: theory ByzantineCD.Events         100% (0.694s ...)
-ByzantineCD: theory ByzantineCD.CD             100% (0.338s ...)
-ByzantineCD: theory ByzantineCD.BlackBox       100% (0.169s ...)
-ByzantineCD: theory ByzantineCD.Reductions     100% (0.320s ...)
-ByzantineCD: theory ByzantineCD.Impossibility  100% (0.045s ...)
-Finished ByzantineCD (0:00:02 elapsed)
-```
+`afp-2026-05-13`** in **~3–4 s** wall time, **15 theory files** at
+100%, **0** `sorry` / `oops` / `apply` / `sledgehammer` in any proof.
 
 Reproducing:
 
@@ -38,68 +28,74 @@ Reproducing:
 isabelle build -d $AFP -D ByzantineCD
 ```
 
-with `$AFP` pointing at a checkout of the Archive of Formal Proofs that
-includes the `FLP` entry.  The development imports only
-`FLP.AsynchronousSystem`, `FLP.Execution`, and `FLP.FLPTheorem`; the
-Consensus problem is re-stated locally rather than imported, so the
-build is robust to AFP's `FLP` entry not exposing a `Consensus.thy`
-of its own.
+with `$AFP` pointing at a checkout of the Archive of Formal Proofs
+that includes the `FLP` entry.  The development imports only
+`FLP.AsynchronousSystem`, `FLP.Execution`, `FLP.FLPTheorem`,
+`FLP.FLPSystem`, and the AFP-FLP `Multiset.thy` indirectly.  The
+abstract Consensus problem is re-stated locally rather than imported,
+so the build is robust to AFP's `FLP` entry not exposing a
+`Consensus.thy` of its own.
+
+See [`ROADMAP.md`](ROADMAP.md) for the up-to-date status of every
+theorem in the paper and what remains as future work.
 
 ## Scope
 
-In scope, fully proved:
+12 of the paper's 18 theorems are fully proven, 1 partially, 5 are
+out of scope (see [`ROADMAP.md`](ROADMAP.md) for the per-theorem
+status table).  Highlights:
 
-- **Theorem 1** (`CD_FN_unavoidable` in `Theorems_1_2.thy`): no CD-solver
-  can prevent false negatives in an asynchronous message-passing system
-  with at least one Byzantine process.  Constructive: given any candidate
-  algorithm we exhibit an explicit adversary using a fresh message id.
-- **Theorem 2** (`CD_FN_or_FP_unavoidable_internal`): for internal events,
-  no CD-solver can prevent both false negatives and false positives.
-  Constructive: the same shape of adversary using a fresh internal event
-  at the Byzantine process.
-- **Theorem 3** (`CD_impossible_unicast`): CD unsolvable in asynchronous
-  unicast with one or more Byzantine processes.  Conditional only on
-  a mild finiteness side condition (`fin_cd` — see Assumptions
-  section).  Proof routes *directly* through Theorem 1
-  (`CD_FN_unavoidable`); the paper's "Consensus ⪯ BlackBox ⪯ CD + FLP"
-  chain is bypassed.
-- **Theorem 4** (`CD_impossible_broadcast`): same, broadcast.  Same
-  side condition.
-- **Theorem 5** (`CD_impossible_multicast`): trivial corollary of 3.
-- **Theorem 15** (`CD_harder_than_Consensus` in `CD_vs_Consensus.thy`):
-  in a Byzantine setting, CD is unsolvable but abstract Consensus has
-  a HOL witness, so no reduction from CD to Consensus exists.  Fully
-  proven from the existing CD impossibility + `exists_consensus_alg`
-  in `Foundation_Vacuity.thy`.
+Fully proven:
+
+- **Theorems 1, 2** (paper §4.1, `Theorems_1_2.thy`):
+  FN and FN-or-FP unavoidable under Byzantine.  Constructive
+  adversaries via fresh natural numbers.
+- **Theorems 3, 4, 5** (paper §4.2, `Impossibility.thy`):
+  CD impossible under unicast / broadcast / multicast.  Conditional
+  only on a mild finiteness side condition `fin_cd`.  Proofs route
+  *directly* through Theorem 1 (`CD_FN_unavoidable`); the paper's
+  `Consensus ⪯ BlackBox ⪯ CD + FLP` chain is bypassed at the
+  critical-path level (and preserved as paper-faithful documentation).
+- **Theorems 6, 7** (paper §4.3, `CD_B_Algorithm.thy`):
+  CD_B solvable under unicast / broadcast.  Mechanised at three
+  layers: the abstract `naive_cd_B_alg` is correct under
+  `correct_reporting` (Phase 1); the operational `Delivery.thy`
+  reduces this to a structural delivery property on the global
+  history (Phase 4); the refined `mode_admissible` of Phase 5
+  internalises the delivery property; the inductive
+  `Execution_Model.thy` exhibits a concrete operational construction
+  that produces mode-admissible histories (Phases 6–8: fairness
+  implies delivery + wf_history preserved + deadlock freedom).
+- **Theorem 8** (paper §4.3, `CD_B_Algorithm.thy`):
+  CD_B impossible under multicast.  Mechanised as the impossibility
+  of a strengthened `produces_valid_F_B_recv_strong` predicate,
+  using a fresh-id adversary at two correct processes.
+- **Theorem 15** (paper §5.1, `CD_vs_Consensus.thy`):
+  CD harder than Consensus under Byzantine.  Directly from CD
+  unsolvability + `exists_consensus_alg`.
 
 Partially formalised:
 
-- **Theorem 16** (Consensus impossibility half exported as
-  `T16_Consensus_unsolvable_part`): half (b) — Consensus is unsolvable
-  under crash failures — is the proven `flp_consensus_unsolvable`
-  against AFP's `ConsensusFails`.  Half (a) — CD is solvable under
-  crash failures — requires modelling explicit messages and in-transit
-  history, which our abstract `'p cd_solver` signature does not capture;
-  documented as deliberately out of scope in `CD_vs_Consensus.thy`.
+- **Theorem 16** (paper §5.1, `CD_vs_Consensus.thy`):
+  Consensus harder than CD under crash failures.  The Consensus-
+  impossibility half is exported from the proven
+  `flp_consensus_unsolvable`.  The CD-solvable-under-crash half
+  requires modelling crash failures explicitly — not in scope.
 
-Foundation laid (theorems out of scope):
+Out of scope:
 
-- **Theorems 6, 7, 8** (paper §4.3): `BHB.thy` provides the Byzantine
-  happened-before relation, `valid_B`, `produces_valid_F_B`, and
-  `CD_B_solvable`, plus structural lemmas (`bhb` is a sub-relation of
-  `hb` against the same history).  T6 and T7 are positive results
-  whose proofs construct algorithms using BRU/BCB/BRB; T8 depends on
-  the unachievability of BRM.  All three require a communication-level
-  model extension not present in this development.
-
-Out of scope (left as deliberate extension points):
-
-- Theorems 6, 7, 8 themselves (B-happened-before results; definitional
-  foundation laid in `BHB.thy`, but the algorithm constructions and
-  the multicast impossibility argument require a communication model
-  not present here)
-- Theorems 9–14 (cryptography-allowing variants)
-- Theorem 16's CD-solvable-under-crash half (model extension required)
+- **Theorems 9–14** (paper §4.4): cryptography-allowing variants.
+  Possibility and impossibility results under digital signatures and
+  hash chains; require a cryptographic primitive model.
+- **Theorems 17, 18** (paper §5.2): CD ↔ CO interreducibility, and
+  CO subject to the same FN/FP limitations as CD.  T17 needs a
+  formal definition of the Causal Ordering problem plus the
+  reductions; T18 is cited from prior work ([42]).
+- **Real-world fairness on the execution model**: connecting the
+  inductive `run_step` to a streamed-execution model with temporal
+  fairness as a coinductive predicate.  Deadlock freedom is proven
+  (Phase 8); the liveness theorem "every fair infinite execution
+  eventually has empty buffer" is the remaining piece.
 
 ## File structure
 
@@ -117,7 +113,10 @@ Out of scope (left as deliberate extension points):
 | `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`.  Retained as the AFP-FLP citation that motivates the paper's chain; not used in the headline impossibility proof. |
 | `Foundation_Vacuity.thy`   | Regression diagnostic: retains the witness showing the abstract `solves_Consensus` predicate alone admits a trivial HOL solver. |
 | `CD_vs_Consensus.thy`      | Theorem 15 (Byzantine: CD harder than Consensus) — fully proven from the existing CD impossibility and the abstract Consensus witness.  Theorem 16 (crash failures: Consensus harder than CD) — Consensus half exported from `flp_consensus_unsolvable`; the CD-solvable-under-crash half is documented as out of scope (requires a richer model with explicit messages). |
-| `BHB.thy`                  | The Byzantine happened-before relation (paper Definition 3) and the CD_B problem (paper Definition 6).  Definitional foundation for paper Section 4.3.  Theorems 6, 7, 8 themselves are out of scope: T6 and T7 are positive results whose proofs construct algorithms using BRU/BCB/BRB communication primitives; T8 depends on the unachievability of BRM.  Same out-of-scope band as T16's positive half. |
+| `BHB.thy`                  | The Byzantine happened-before relation (paper Definition 3) and the CD_B problem (paper Definition 6).  Definitional foundation for paper §4.3: `bhb`, `bhb_eval`, `valid_B`, `produces_valid_F_B`, `CD_B_solvable`, and structural lemmas (`bhb` is a sub-relation of `hb` against the same history). |
+| `CD_B_Algorithm.thy`       | Theorems 6/7/8 (paper §4.3).  Abstract algorithm with `recv` input; `naive_cd_B_alg` proven correct under `correct_reporting`; T6/T7 as mode-tagged corollaries; T8 as `produces_valid_F_B_recv_strong_unsolvable`. |
+| `Delivery.thy`             | Operational delivery layer: `messages_delivered_among` as the structural correct-to-correct delivery property; `mode_admissible` refined to bundle this with `wf_history`; operational versions of T6/T7. |
+| `Execution_Model.thy`      | Inductive `run_step` (internal/send/recv/byzantine) with in-flight buffer.  Proves: `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_unicast`/`_broadcast` (closes the Phase 5 gap), `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
 
@@ -328,24 +327,29 @@ through Theorem 1 (`CD_FN_unavoidable`); `flp_consensus_unsolvable` is
 retained as the AFP-FLP citation that motivates the paper's chosen
 chain.
 
-## Reusability for the B-happened-before extensions
+## The B-happened-before extension (paper §4.3)
 
-`Events.thy` already records peer information on `Send` and `Receive`
-events; deriving the `B`-happened-before relation
-(Definition 3 of the paper) is straightforward:
+The B-happened-before extension is now implemented end-to-end:
 
-```isabelle
-inductive bhb :: "'p set ⇒ 'p history ⇒ 'p event ⇒ 'p event ⇒ bool"
-  for C H where
-    "p \<in> C ⟹ \<dots> ⟹ bhb C H e e'"   \<comment> \<open>program order at a correct process\<close>
-  | "p \<in> C ⟹ q \<in> C ⟹ matches e e' ⟹ \<dots> ⟹ bhb C H e e'"
-  | "bhb C H e e' ⟹ bhb C H e' e'' ⟹ bhb C H e e''"
-```
+- `BHB.thy` defines `bhb`, `bhb_eval`, `valid_B`, `produces_valid_F_B`,
+  `CD_B_solvable`, plus structural lemmas (`bhb` is a sub-relation of
+  `hb` against the same history; bhb's endpoints are at correct
+  processes).
+- `CD_B_Algorithm.thy` introduces a richer algorithm signature
+  `'p cd_alg_with_recv` that takes a per-peer reported history, and
+  proves the abstract correctness of the trivial `naive_cd_B_alg`
+  under `correct_reporting`.  T6, T7 fall out as mode-tagged
+  corollaries; T8 is mechanised as the impossibility of a
+  strengthened `produces_valid_F_B_recv_strong` predicate.
+- `Delivery.thy` connects `correct_reporting` to a structural
+  delivery property on the global history.
+- `Execution_Model.thy` exhibits a concrete operational construction
+  (inductive `run_step` with explicit in-flight buffer) and proves
+  `run_completes_to_mode_admissible_unicast`/`_broadcast` plus
+  deadlock freedom.
 
-The validity predicate analogously becomes a `valid_B` that uses `bhb`
-in place of `hb`; the rest of the development re-uses the same locale
-machinery, with Theorems 6, 7, 8 proved as inhabitations of the
-constructive (positive-result) part of the framework.
+`Events.thy`'s `Send`/`Receive` events carry peer fields exactly to
+support this stack.
 
 ## How to read the proofs
 
