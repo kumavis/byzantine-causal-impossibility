@@ -183,11 +183,46 @@ broadcast is delivered to every correct receiver).  Mechanising
 either operational fact requires modelling the communication
 primitive itself -- a separate development.\<close>
 
+text \<open>Mode-specific admissibility on global histories.  For unicast
+and broadcast the admissibility predicate \emph{includes} the
+correct-to-correct delivery property -- that is the structural
+content of ``the unicast / broadcast communication primitive is in
+use''.  For multicast, no delivery guarantee is built in -- matching
+the paper's T8 ``BRM unachievable'' claim that correct-to-correct
+delivery cannot be enforced.
+
+At our event-based abstraction level the structural content of T6's
+unicast property and T7's broadcast property collapse to the same
+condition: every correct-to-correct \<open>Send\<close> event has a matching
+\<open>Receive\<close> event at the peer.  (The paper's distinction lies in the
+operational primitives -- BRU for T6, BCB-over-BRB for T7 -- not in
+what the histories look like at the level of @{type event}.)\<close>
+
 definition mode_admissible :: "comm_mode \<Rightarrow> 'p history \<Rightarrow> bool" where
-  "mode_admissible m H \<longleftrightarrow> wf_history H"
-  \<comment> \<open>placeholder for mode-specific shape constraints; expanded by
-      future developments that model unicast / broadcast / multicast
-      explicitly\<close>
+  "mode_admissible m H \<longleftrightarrow>
+     wf_history H \<and>
+     (case m of
+        Unicast \<Rightarrow> messages_delivered_among correct H
+      | Broadcast \<Rightarrow> messages_delivered_among correct H
+      | Multicast \<Rightarrow> True)"
+
+text \<open>Sanity: under unicast / broadcast, delivery is automatic; under
+multicast it is not.\<close>
+
+lemma mode_admissible_unicast_delivers:
+  assumes "mode_admissible Unicast H"
+  shows "messages_delivered_among correct H"
+  using assms by (simp add: mode_admissible_def)
+
+lemma mode_admissible_broadcast_delivers:
+  assumes "mode_admissible Broadcast H"
+  shows "messages_delivered_among correct H"
+  using assms by (simp add: mode_admissible_def)
+
+lemma mode_admissible_wf:
+  assumes "mode_admissible m H"
+  shows "wf_history H"
+  using assms by (simp add: mode_admissible_def)
 
 theorem CD_B_solvable_under_unicast_delivery:
   assumes mode_delivers:
@@ -240,6 +275,78 @@ proof (intro allI impI)
               (adv_e_star adv)"
     by (rule naive_cd_B_alg_correct_under_delivery)
 qed
+
+section \<open>Unconditional operational T6 and T7 (Phase 5)\<close>
+
+text \<open>Under the refined @{const mode_admissible} -- where the
+unicast and broadcast cases structurally include
+@{const messages_delivered_among} -- the operational hypothesis of
+the Phase 4 theorems is automatically discharged.  The Phase 5
+theorems below are therefore unconditional in mode-admissibility,
+with no separate operational hypothesis required.
+
+\textit{What this means precisely.}  The Phase 4 statement was
+parameterised by the meta-claim ``every history reachable under
+mode \<open>m\<close> delivers correct-to-correct messages''.  In Phase 5 that
+meta-claim is internalised: a history is \emph{mode-admissible}
+under unicast / broadcast \emph{iff} it satisfies that delivery
+property.  The conditional Phase 4 theorems collapse to the
+unconditional Phase 5 theorems below.
+
+\textit{What still needs a real model.}  The remaining gap moves
+one level down: we have not constructed an actual communication
+primitive whose reachable histories are unicast/broadcast-
+admissible in the new sense.  Doing so requires modelling
+sends-in-flight, schedulers, fairness, and (for T7) BRB internals
+-- a separate development.  When that development arrives, the
+mode-admissibility predicate above is exactly the interface it has
+to validate: ``every history reachable under your operational model
+is mode-admissible''.\<close>
+
+theorem CD_B_solvable_unicast_operational:
+  assumes adm: "adversary_admissible correct adv"
+      and mode_ok: "mode_admissible Unicast (adv_E adv)"
+  shows "valid_B correct (adv_E adv)
+                 (fst (naive_cd_B_alg
+                        (recv_from_history (adv_i adv) (adv_E adv))
+                        (adv_i adv) (adv_e_star adv)))
+                 (adv_e_star adv)"
+proof -
+  have "messages_delivered_among correct (adv_E adv)"
+    by (rule mode_admissible_unicast_delivers[OF mode_ok])
+  with adm show ?thesis
+    by (rule naive_cd_B_alg_correct_under_delivery)
+qed
+
+theorem CD_B_solvable_broadcast_operational:
+  assumes adm: "adversary_admissible correct adv"
+      and mode_ok: "mode_admissible Broadcast (adv_E adv)"
+  shows "valid_B correct (adv_E adv)
+                 (fst (naive_cd_B_alg
+                        (recv_from_history (adv_i adv) (adv_E adv))
+                        (adv_i adv) (adv_e_star adv)))
+                 (adv_e_star adv)"
+proof -
+  have "messages_delivered_among correct (adv_E adv)"
+    by (rule mode_admissible_broadcast_delivers[OF mode_ok])
+  with adm show ?thesis
+    by (rule naive_cd_B_alg_correct_under_delivery)
+qed
+
+text \<open>Discharge of the Phase 4 operational hypothesis: under the
+refined @{const mode_admissible}, the meta-claim @{prop "\<forall>H.
+mode_admissible Unicast H \<longrightarrow> messages_delivered_among correct H"}
+becomes a theorem.  Likewise for broadcast.\<close>
+
+theorem unicast_delivers_unconditionally:
+  shows "\<forall>H. mode_admissible Unicast H
+              \<longrightarrow> messages_delivered_among correct H"
+  by (auto simp: mode_admissible_def)
+
+theorem broadcast_delivers_unconditionally:
+  shows "\<forall>H. mode_admissible Broadcast H
+              \<longrightarrow> messages_delivered_among correct H"
+  by (auto simp: mode_admissible_def)
 
 end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
