@@ -16,12 +16,12 @@ submitter would still need to do.
 - The session builds green under `isabelle build -d $AFP -D .` with
   Isabelle 2025-2 and AFP snapshot `afp-2026-05-13` (the closest
   AFP-stable release at the time of preparation).  Wall time
-  ~3-4s; 15 theory files.
+  ~3s; 16 theory files.
 - All proofs are declarative Isar; zero `sorry`, `oops`, `apply`,
   `sledgehammer`, or `try0` anywhere in the development.
-- 12 of the paper's 18 theorems are fully proven; T16 is partially
-  proven (Consensus half); T17, T18 and T9-T14 remain as future
-  work.  See `ROADMAP.md`.
+- 14 of the paper's 18 theorems are fully proven; T16 is partially
+  proven (Consensus half); T9-T14 remain as future work.  See
+  `ROADMAP.md`.
 
 ## What still needs to happen before submission
 

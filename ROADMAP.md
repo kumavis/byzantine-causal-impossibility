@@ -23,10 +23,10 @@ suggested order for the remaining work.
 | 4.4 | T14 | CD_B possible, multicast + crypto | ❌ not done | (needs crypto layer) |
 | 5.1 | T15 | CD harder than Consensus (Byzantine) | ✅ proven | `CD_vs_Consensus.CD_harder_than_Consensus` |
 | 5.1 | T16 | Consensus harder than CD (crash) | ⚠️ partial | `CD_vs_Consensus.T16_Consensus_unsolvable_part` |
-| 5.2 | T17 | CO ↔ CD interreducible (Byzantine) | ❌ not done | (needs CO definitions) |
-| 5.2 | T18 | CO subject to FN/FP (cited [42]) | ❌ not done | (cited from prior work; would need CO layer) |
+| 5.2 | T17 | CO ↔ CD interreducible (Byzantine) | ✅ proven | `CO.CD_solvable_imp_CO_solvable` + `CO.T17_CO_interreducible_with_CD` |
+| 5.2 | T18 | CO subject to FN/FP | ✅ proven | `CO.CO_FN_unavoidable`, `CO.CO_FN_or_FP_unavoidable_internal` |
 
-**Scoreboard**: 12/18 fully proven · 1/18 partial · 5/18 not done.
+**Scoreboard**: 14/18 fully proven · 1/18 partial · 3/18 not done.
 
 ## Side hypotheses still on the critical path
 
@@ -49,33 +49,7 @@ theorems do not need it.)
 In suggested order (easiest → hardest), with notes on what each
 piece would require:
 
-### 1. Theorem 17 (CD ↔ CO interreducibility, Byzantine)
-
-Smallest of the remaining items.  Paper §5.2 defines the causal-
-ordering problem `CO(E, F, m_2)` (their Definition 10) in shape
-parallel to `CD(E, F, e*_i)` (Definition 5) — `m_2` is a message
-identifier instead of an event identifier.  The reduction `CO ⪯
-CD` is one paragraph: invoke `CD(E, F, e*_r)` where `e*_r` is the
-receive event of `m_2`; the BB-style output gives enough
-information to settle `CO_Deliv(m_2)`.  The reverse direction is
-similar.
-
-Mechanisation plan:
-- New theory `CO.thy` defining the CO problem analogously to
-  `CD.thy`.
-- Two reduction lemmas: `CO_reduces_to_CD`, `CD_reduces_to_CO`.
-- Composition: `CO ⪯ CD ∧ CD ⪯ CO`.
-
-Estimated effort: a few hundred lines of Isar.  No new model
-extensions.
-
-### 2. Theorem 18 (CO subject to FN/FP)
-
-Stated by the paper as a corollary of [42] — earlier prior work.
-Once T17 is in place, T18 follows from T1+T2 via the reduction.
-Small extra step on top of T17.
-
-### 3. Theorem 16's CD-solvable-under-crash half
+### 1. Theorem 16's CD-solvable-under-crash half
 
 Paper §5.1 argues: in the crash-failure model, CD is solvable
 because crashed processes' histories can be transitively propagated
@@ -90,7 +64,7 @@ Mechanisation requires:
 
 Modest model extension (~the size of one new theory).
 
-### 4. Real-world fairness on the execution model
+### 2. Real-world fairness on the execution model
 
 Phase 8 proved deadlock freedom (`not_drained_can_step`).  The
 remaining temporal-liveness theorem is:
@@ -109,7 +83,7 @@ systems formalisation work but not small.  The current development
 is parametric over it (Phases 6–8 cover the *finite*-execution
 side: any run that fairly completes is mode-admissible).
 
-### 5. Theorems 9–14 (cryptography variants)
+### 3. Theorems 9–14 (cryptography variants)
 
 Paper §4.4.  The hardest remaining piece.  Requires:
 - A model of digital signatures (sign / verify, with `verify (sign
@@ -124,7 +98,9 @@ This is a multi-week project on its own.
 
 ## Possible immediate next step
 
-Recommendation: **Theorem 17**.  It's the smallest remaining piece,
-genuinely extends the development with new mathematical content,
-and lays the foundation for T18.  After that the natural ordering
-is T18 → T16-half → fairness streams → T9–T14.
+Recommendation: **Theorem 16's CD-solvable-under-crash half**.  It is
+the smallest remaining piece, extends the development with a crash-
+failure model that is genuinely distinct from the Byzantine model
+already in place, and finishes off T16 (currently the only partial
+theorem).  After that the natural ordering is fairness streams →
+T9–T14.

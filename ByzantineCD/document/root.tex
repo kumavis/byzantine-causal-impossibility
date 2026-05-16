@@ -59,6 +59,27 @@ We formalise:
         (Bisping et al., 2025) as a proven theorem
         (\verb|flp_consensus_unsolvable|, discharged against
         \verb|flpPseudoConsensus.ConsensusFails|).
+  \item Theorems 6, 7, 8 (paper Section 4.3): the
+        Byzantine-happened-before extension CD\_B.  T6/T7
+        solvable under unicast/broadcast at three layers (abstract
+        \verb|naive_cd_B_alg| under \verb|correct_reporting|;
+        operational reduction to a structural delivery property;
+        concrete operational construction via an inductive
+        \verb|run_step| with explicit in-flight buffer).  T8
+        impossible under multicast.
+  \item Theorem 15 (paper Section 5.1): CD is harder than
+        Consensus in the Byzantine model, directly from CD
+        unsolvability and the abstract Consensus witness.
+  \item Theorems 17 and 18 (paper Section 5.2): CD and CO are
+        interreducible in the Byzantine model (T17), and CO is
+        subject to FN and FN-or-FP for internal-event witnesses
+        (T18).  CO is mechanised as a strict restriction of CD to
+        receive-event targets; T17 forward direction is
+        constructive (a CD solver is automatically a CO solver),
+        T18 is proven directly via a two-message fresh-id
+        construction, and the reverse direction of T17 is proven
+        under Byzantine premises by routing through the two
+        independently-established impossibility chains.
 \end{itemize}
 
 The development sits on top of the AFP entry \emph{FLP}.  The
@@ -131,6 +152,22 @@ The theories are intended to be read in the following order:
         documenting why the abstract \verb|solves_Consensus|
         predicate is too weak to express FLP, and motivating the
         FLP-style chain used by \verb|Impossibility|.
+  \item \verb|CD_vs_Consensus|: paper Section 5.1, Theorems 15
+        and 16 (Byzantine: CD harder than Consensus; crash:
+        Consensus half of T16 only).
+  \item \verb|BHB|, \verb|CD_B_Algorithm|, \verb|Delivery|,
+        \verb|Execution_Model|: paper Section 4.3.  The
+        B-happened-before relation; the CD\_B problem; abstract
+        and operational solvability under unicast/broadcast
+        (Theorems 6, 7); impossibility under multicast (Theorem
+        8); inductive execution model with deadlock freedom.
+  \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
+        causal-ordering problem CO as a strict restriction of CD
+        to receive-event targets; the forward reduction CD
+        $\implies$ CO; T18 false-negative and false-negative-or-
+        false-positive constructions; the impossibility of CO
+        under all three communication modes; the interreducibility
+        statement under Byzantine premises.
 \end{enumerate}
 
 \newpage
