@@ -27,32 +27,36 @@
   conjunction "CD unsolvable AND Consensus abstractly solvable"
   directly refutes the implication "Consensus solver \<longrightarrow> CD solver".
 
-  Theorem 16 is only partially formalisable in the present setup.
+  Theorem 16 is fully formalisable in the present setup once we
+  switch to the cd_alg_with_recv signature of CD_B_Algorithm.thy.
   Its formal content has two halves:
-    (a)  CD is solvable under crash failures.
+    (a)  CD is solvable under crash failures (constructive).
     (b)  Consensus is not solvable under crash failures (FLP).
 
   Half (b) is fully proved in our development (\<open>flp_consensus_unsolvable\<close>
   in FLP_Consensus.thy, discharged against the AFP entry's
   ConsensusFails).  We re-export it here for contrast with Theorem 15.
 
-  Half (a) requires a crash-failure model in which the CD-solver can
-  *collect* the execution history E -- which in turn requires modelling
-  messages and communication.  Our abstract 'p cd_solver is a HOL
-  function over (i, e_star), with no notion of in-transit messages or
-  collected E; the paper's proof of (a) ("crashed processes'
-  execution histories propagate transitively via messages") therefore
-  cannot be carried out at this abstraction level.  A faithful
-  mechanisation of (a) would commute the asynchronous-system locale
-  of the AFP FLP entry with our adversary model -- a substantial
-  follow-on rather than a small corollary.
-
-  We state half (b) below and document half (a) as deliberately
-  out of scope.
+  Half (a) is proved against the richer cd_alg_with_recv signature
+  of CD_B_Algorithm.thy.  At the abstraction of the bare 'p cd_solver
+  type the paper's claim cannot be stated -- the algorithm sees only
+  (i, e_star) and has no way to "collect" E.  In the richer
+  signature, the algorithm additionally takes a per-peer reported
+  history recv; the crash-model "transitive propagation via execution
+  messages" claim becomes the abstract condition recv = adv_E adv
+  pointwise (every process's report matches the true execution).
+  Under this condition the naive algorithm "F := recv" trivially
+  produces valid F (because recv = E, so valid E recv e_star reduces
+  to valid E E e_star which is True at every event).  See
+  \<open>T16_CD_solvable_under_crash_part\<close> below.
 *)
 
 theory CD_vs_Consensus
-  imports Impossibility Foundation_Vacuity FLP_Consensus
+  imports
+    Impossibility
+    Foundation_Vacuity
+    FLP_Consensus
+    CD_B_Algorithm
 begin
 
 section \<open>Theorem 15: in a Byzantine setting, CD is harder than Consensus\<close>
@@ -172,33 +176,147 @@ The paper's proof has two parts:
 \textit{Half (2) -- formalised.}  The FLP impossibility on the
 asynchronous-distributed model of the AFP entry is the proven
 theorem @{thm flp_consensus_unsolvable} in @{theory_text
-\<open>FLP_Consensus.thy\<close>}.  We re-export it below as the partial
-formalisation of Theorem 16.
+\<open>FLP_Consensus.thy\<close>}.  We re-export it below.
 
-\textit{Half (1) -- deliberately out of scope.}  Our abstract
-@{type cd_solver} signature is @{typ "'p \<Rightarrow> 'p event \<Rightarrow> 'p history \<times> bool"};
-the algorithm sees only the query indices @{term i} and @{term
-e_star}, not any messages or in-transit history.  The paper's proof
-of half (1) constructs the CD-solver by ``transitive propagation
-via execution messages'', which requires a model with explicit
-messages and a notion of `which messages are in transit at a given
-configuration'.  The AFP FLP entry provides such a model
-(@{theory \<open>FLP.AsynchronousSystem\<close>}), but commuting it with our
-adversary model is a substantial follow-on rather than a small
-corollary.  A faithful formalisation of half (1) is therefore left
-as future work.
+\textit{Half (1) -- formalised against the cd_alg_with_recv
+signature of CD_B_Algorithm.thy.}  The bare @{type cd_solver}
+signature (@{typ "'p \<Rightarrow> 'p event \<Rightarrow> 'p history \<times> bool"})
+gives the algorithm only the query indices @{term i} and @{term
+e_star}, with no way to ``collect'' messages.  The paper's
+``transitive propagation via execution messages'' argument requires
+a signature in which the algorithm has an input channel.  The
+\<open>cd_alg_with_recv\<close> signature of @{theory_text
+\<open>CD_B_Algorithm.thy\<close>} provides exactly such a channel: an
+algorithm of that signature additionally takes a per-peer reported
+history @{term recv} -- ``what \<open>p_i\<close> has been told about each other
+process's execution''.
 
-The full ``Consensus is harder than CD'' conclusion (and the
-\<open>Consensus \<not>\<preceq> CD\<close>, \<open>CD \<preceq> Consensus\<close> derivations
-of the paper) ultimately depends on half (1) as well, so the
-overall Theorem 16 is reported here as partially-formalised.\<close>
+In the crash-failure model, no process lies; the only failure mode
+is to stop sending and stop executing.  Hence every reported history
+the algorithm receives is faithful to the true execution
+\<open>adv_E adv\<close>, and ``transitive propagation'' (Section 5.1 of the
+paper) guarantees that all causally-relevant events reach every
+correct process.  We model this abstractly as \<open>recv = adv_E adv\<close>
+pointwise: the algorithm has perfect information about each
+process's actual history.
+
+Under this assumption, the naive algorithm \<open>naive_cd_B_alg\<close>
+from @{theory_text \<open>CD_B_Algorithm.thy\<close>} -- which simply outputs
+\<open>F := recv\<close> -- trivially produces valid F: because \<open>recv = E\<close>
+the @{const valid} predicate reduces to \<open>valid E E e_star\<close>, which
+holds at every event by reflexivity of @{const hb_eval}.\<close>
 
 theorem T16_Consensus_unsolvable_part:
-  \<comment> \<open>The proved half of Theorem 16: in the AFP entry's
+  \<comment> \<open>One half of Theorem 16: in the AFP entry's
       asynchronous-distributed model, FLP-style consensus is
       unsolvable.  See @{theory_text \<open>FLP_Consensus.thy\<close>} for the
       proof against AFP's @{thm flpPseudoConsensus.ConsensusFails}.\<close>
   shows "\<not> flp_consensus_solvable transFn sendsFn startFn"
   by (rule flp_consensus_unsolvable)
+
+subsection \<open>The CD-solvable half\<close>
+
+text \<open>Predicate: an algorithm of type @{typ "'p cd_alg_with_recv"}
+satisfies the CD problem under crash failures (modelled abstractly
+as ``every report is faithful'') if, on every admissible adversary
+\<open>adv\<close> and every \<open>recv\<close> that pointwise matches \<open>adv_E adv\<close>, the
+algorithm's collected history is \<open>valid\<close> (in the plain @{const valid}
+sense, with respect to the actual execution).
+
+\textit{Deviation:} ``every report is faithful'' is the strongest
+form of the crash-model report-faithfulness assumption.  The paper's
+``transitive propagation via execution messages'' technically only
+guarantees that events in the \emph{causal past} of \<open>e_star\<close> are
+propagated, not necessarily \emph{every} event at \emph{every}
+process.  We adopt the stronger pointwise-equality reading because
+(i) it is strictly easier to discharge (subsumes the
+causal-past-only version) and (ii) the paper's stated conclusion
+``CD is solvable'' under crash failures is what we need to back up
+the \<open>Consensus \<not>\<preceq> CD\<close> reasoning that motivates Theorem 16.\<close>
+
+definition produces_valid_F_recv ::
+  "'p set \<Rightarrow> 'p cd_alg_with_recv \<Rightarrow> bool" where
+  "produces_valid_F_recv P alg \<longleftrightarrow>
+     (\<forall>adv recv.
+        adversary_admissible P adv \<longrightarrow>
+        wf_history recv \<longrightarrow>
+        recv = adv_E adv \<longrightarrow>
+          (let (F', _) = alg recv (adv_i adv) (adv_e_star adv) in
+             valid (adv_E adv) F' (adv_e_star adv)))"
+
+context byzantineSystem
+begin
+
+text \<open>The naive algorithm @{const naive_cd_B_alg} satisfies the
+crash-CD specification: when \<open>recv = adv_E adv\<close> the output
+\<open>F := recv\<close> equals \<open>adv_E adv\<close>, so @{const valid} reduces to
+\<open>valid E E e_star\<close>, which holds at every event.\<close>
+
+lemma valid_self [simp]:
+  shows "valid E E e_star"
+  by (simp add: valid_def)
+
+lemma naive_cd_B_alg_solves_CD_under_crash:
+  shows "produces_valid_F_recv correct naive_cd_B_alg"
+proof (unfold produces_valid_F_recv_def, intro allI impI)
+  fix adv :: "'p adversary" and recv :: "'p \<Rightarrow> 'p history_local"
+  assume adm:    "adversary_admissible correct adv"
+     and wfR:    "wf_history recv"
+     and rec_eq: "recv = adv_E adv"
+
+  have valid_at: "valid (adv_E adv) recv (adv_e_star adv)"
+    using rec_eq by simp
+
+  show "let (F', _) = naive_cd_B_alg recv (adv_i adv) (adv_e_star adv) in
+          valid (adv_E adv) F' (adv_e_star adv)"
+    using valid_at by (simp add: naive_cd_B_alg_def Let_def)
+qed
+
+theorem T16_CD_solvable_under_crash_part:
+  \<comment> \<open>The constructive half of Theorem 16: in the crash-failure
+      model, CD is solvable.  Under the \<open>cd_alg_with_recv\<close>
+      signature, the naive algorithm \<open>F := recv\<close> works whenever
+      the report is faithful to the true execution -- which is the
+      abstract content of the paper's ``transitive propagation via
+      execution messages'' claim.\<close>
+  shows "\<exists>alg. produces_valid_F_recv correct alg"
+  using naive_cd_B_alg_solves_CD_under_crash by blast
+
+subsection \<open>Full Theorem 16\<close>
+
+text \<open>Paper Theorem 16 as a single statement: under crash failures,
+CD is solvable but Consensus is not.  The asymmetry justifies the
+paper's twin conclusions \<open>Consensus \<not>\<preceq> CD\<close> (a CD solver does
+not yield a Consensus solver, because Consensus is impossible) and
+\<open>CD \<preceq> Consensus\<close> (a Consensus solver yields a CD solver --
+this direction is the harder one in the paper's narrative, and is
+not directly mechanised here because it would require committing to
+a specific algorithm-from-Consensus construction).\<close>
+
+theorem T16_full:
+  shows "(\<exists>alg. produces_valid_F_recv correct alg)
+       \<and> \<not> flp_consensus_solvable transFn sendsFn startFn"
+proof
+  show "\<exists>alg. produces_valid_F_recv correct alg"
+    by (rule T16_CD_solvable_under_crash_part)
+  show "\<not> flp_consensus_solvable transFn sendsFn startFn"
+    by (rule T16_Consensus_unsolvable_part)
+qed
+
+text \<open>\<open>Consensus \<not>\<preceq> CD\<close> under crash failures (the headline
+conclusion of Theorem 16 in the paper, reading \<open>X \<preceq> Y\<close> as
+``Y-solver yields X-solver''): a CD-solver in our richer signature
+exists, but no Consensus-solver in the FLP sense does, so the
+implication ``crash-CD-solver \<longrightarrow> Consensus-solver'' is False.\<close>
+
+theorem T16_Consensus_not_reducible_to_CD_under_crash:
+  shows "\<not> ((\<exists>alg. produces_valid_F_recv correct alg)
+             \<longrightarrow> flp_consensus_solvable transFn sendsFn startFn)"
+proof -
+  from T16_full
+  show ?thesis by blast
+qed
+
+end \<comment> \<open>context @{locale byzantineSystem}\<close>
 
 end

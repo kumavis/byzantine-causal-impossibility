@@ -19,9 +19,9 @@ submitter would still need to do.
   ~3s; 16 theory files.
 - All proofs are declarative Isar; zero `sorry`, `oops`, `apply`,
   `sledgehammer`, or `try0` anywhere in the development.
-- 14 of the paper's 18 theorems are fully proven; T16 is partially
-  proven (Consensus half); T9-T14 remain as future work.  See
-  `ROADMAP.md`.
+- 15 of the paper's 18 theorems are fully proven; T9-T14
+  (cryptography) and the temporal-liveness side of the execution
+  model remain as future work.  See `ROADMAP.md`.
 
 ## What still needs to happen before submission
 

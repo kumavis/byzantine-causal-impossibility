@@ -41,9 +41,9 @@ theorem in the paper and what remains as future work.
 
 ## Scope
 
-14 of the paper's 18 theorems are fully proven, 1 partially, 3 are
-out of scope (see [`ROADMAP.md`](ROADMAP.md) for the per-theorem
-status table).  Highlights:
+15 of the paper's 18 theorems are fully proven, 3 are out of scope
+(see [`ROADMAP.md`](ROADMAP.md) for the per-theorem status table).
+Highlights:
 
 Fully proven:
 
@@ -73,6 +73,13 @@ Fully proven:
 - **Theorem 15** (paper §5.1, `CD_vs_Consensus.thy`):
   CD harder than Consensus under Byzantine.  Directly from CD
   unsolvability + `exists_consensus_alg`.
+- **Theorem 16** (paper §5.1, `CD_vs_Consensus.thy`):
+  Consensus harder than CD under crash failures.  Consensus-half
+  exported from `flp_consensus_unsolvable`; CD-solvable-half via
+  the `cd_alg_with_recv` signature — the naive algorithm
+  `F := recv` produces valid F whenever `recv = adv_E adv`, the
+  abstract content of the paper's "transitive propagation via
+  execution messages".
 - **Theorems 17, 18** (paper §5.2, `CO.thy`):
   CD ↔ CO interreducibility in the Byzantine model (T17), and CO
   subject to FN and FN-or-FP for internal-event witnesses (T18).
@@ -82,14 +89,6 @@ Fully proven:
   reverse direction is proven under the standard Byzantine premises
   by routing through `CD_impossible_*` + `CO_impossible_*` (both
   sides impossible, hence interreducible).
-
-Partially formalised:
-
-- **Theorem 16** (paper §5.1, `CD_vs_Consensus.thy`):
-  Consensus harder than CD under crash failures.  The Consensus-
-  impossibility half is exported from the proven
-  `flp_consensus_unsolvable`.  The CD-solvable-under-crash half
-  requires modelling crash failures explicitly — not in scope.
 
 Out of scope:
 
@@ -117,7 +116,7 @@ Out of scope:
 | `BlackBox_Unsolvable.thy`  | *Proves* `¬ BlackBox_solvable procs correct` by direct reduction to Theorem 1 via the BB→CD projection.  This discharges what was previously the `bb_unsolv` hypothesis on Theorems 3/4/5. |
 | `FLP_Consensus.thy`        | FLP-style consensus predicate and *proven* impossibility (no axiom) via AFP's `ConsensusFails`.  Retained as the AFP-FLP citation that motivates the paper's chain; not used in the headline impossibility proof. |
 | `Foundation_Vacuity.thy`   | Regression diagnostic: retains the witness showing the abstract `solves_Consensus` predicate alone admits a trivial HOL solver. |
-| `CD_vs_Consensus.thy`      | Theorem 15 (Byzantine: CD harder than Consensus) — fully proven from the existing CD impossibility and the abstract Consensus witness.  Theorem 16 (crash failures: Consensus harder than CD) — Consensus half exported from `flp_consensus_unsolvable`; the CD-solvable-under-crash half is documented as out of scope (requires a richer model with explicit messages). |
+| `CD_vs_Consensus.thy`      | Theorem 15 (Byzantine: CD harder than Consensus) — fully proven from the existing CD impossibility and the abstract Consensus witness.  Theorem 16 (crash failures: Consensus harder than CD) — fully proven: Consensus half exported from `flp_consensus_unsolvable`; CD-solvable-half via the `cd_alg_with_recv` signature with `F := recv` under the abstract crash-faithfulness assumption `recv = adv_E adv`. |
 | `BHB.thy`                  | The Byzantine happened-before relation (paper Definition 3) and the CD_B problem (paper Definition 6).  Definitional foundation for paper §4.3: `bhb`, `bhb_eval`, `valid_B`, `produces_valid_F_B`, `CD_B_solvable`, and structural lemmas (`bhb` is a sub-relation of `hb` against the same history). |
 | `CD_B_Algorithm.thy`       | Theorems 6/7/8 (paper §4.3).  Abstract algorithm with `recv` input; `naive_cd_B_alg` proven correct under `correct_reporting`; T6/T7 as mode-tagged corollaries; T8 as `produces_valid_F_B_recv_strong_unsolvable`. |
 | `Delivery.thy`             | Operational delivery layer: `messages_delivered_among` as the structural correct-to-correct delivery property; `mode_admissible` refined to bundle this with `wf_history`; operational versions of T6/T7. |

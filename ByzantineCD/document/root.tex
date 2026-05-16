@@ -67,9 +67,13 @@ We formalise:
         concrete operational construction via an inductive
         \verb|run_step| with explicit in-flight buffer).  T8
         impossible under multicast.
-  \item Theorem 15 (paper Section 5.1): CD is harder than
-        Consensus in the Byzantine model, directly from CD
-        unsolvability and the abstract Consensus witness.
+  \item Theorems 15 and 16 (paper Section 5.1): in the Byzantine
+        model CD is harder than Consensus, directly from CD
+        unsolvability and the abstract Consensus witness; in the
+        crash-failure model, the asymmetry reverses (Consensus is
+        unsolvable by FLP, CD is solvable via the
+        \verb|cd_alg_with_recv| signature with $F := \mathit{recv}$
+        whenever reports are faithful to the true execution).
   \item Theorems 17 and 18 (paper Section 5.2): CD and CO are
         interreducible in the Byzantine model (T17), and CO is
         subject to FN and FN-or-FP for internal-event witnesses
