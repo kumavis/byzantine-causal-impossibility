@@ -30,6 +30,7 @@ session ByzantineCD (AFP) = FLP +
     Delivery
     Execution_Model
     Liveness
+    Primitives
     CD_vs_Consensus
     CO
     CD_with_Crypto

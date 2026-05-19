@@ -19,7 +19,7 @@ Wilhelm-Weidner, Peters, Nestmann, 2025-03).
 ## Status
 
 The session compiles against **Isabelle 2025-2 + AFP snapshot
-`afp-2026-05-13`** in **~4 s** wall time, **18 theory files** at
+`afp-2026-05-13`** in **~5 s** wall time, **19 theory files** at
 100%, **0** `sorry` / `oops` / `apply` / `sledgehammer` in any proof.
 
 Reproducing:
@@ -87,6 +87,20 @@ Fully proven:
   in a fair infinite run eventually has a matching `Receive`.
   Composes deadlock freedom + fairness assumption into a per-event
   liveness guarantee.
+- **BRU and BCB-over-BRB primitives** (paper-adjacent,
+  `Primitives.thy`): named abstractions of the two communication
+  primitives invoked in paper §4.3 for T6 and T7.  `bru_satisfied`
+  is the structural shape of BRU at the event level (every
+  correct-to-correct `Send` has a matching `Receive`); the
+  existing `fairness_implies_delivery` and `fair_run_delivers` of
+  `Execution_Model.thy` / `Liveness.thy` discharge it from the
+  inductive run model.  `bcb_causal_order` is the additional
+  delivery-order property that BCB (over BRB) guarantees; together
+  with BRU it makes `bcb_over_brb_satisfied`.  End-to-end
+  composition theorems `bru_solves_CD_B_unicast` and
+  `bcb_over_brb_solves_CD_B_broadcast` give operational T6 / T7
+  named explicitly via the primitives; `fair_drained_run_solves_CD_B_*`
+  ties it all the way back to a concrete fair drained run.
 - **Theorems 9–14** (paper §4.4 + §4.5, `CD_with_Crypto.thy`):
   CD impossibility under unicast / broadcast / multicast even
   with cryptography (T9, T10, T11) — direct corollaries of
@@ -119,10 +133,12 @@ Out of scope (paper-adjacent, would deepen the mechanisation):
   collision-resistant hashes, and recursive hash histories would
   let us state the paper's quantitative FP-prevention qualifier
   (FP prevented for `t < n/3` under Bracha's BRB).
-- **Operational primitives behind T6/T7.**  Byzantine Reliable
-  Unicast and Byzantine Causal Broadcast (over Byzantine Reliable
-  Broadcast) discharge `correct_reporting` for T6/T7; we leave
-  the operational discharge layer out of scope at the same
+- **Operational realisation of BCB causal order.**  `Primitives.thy`
+  states `bcb_causal_order` and connects it to the broadcast-mode
+  CD_B solvability theorem, but the underlying `run_step`
+  scheduler does not enforce causal order on `step_recv`.  A
+  scheduler-level refinement of the model would discharge that
+  property operationally; we leave it out of scope at the same
   abstraction as crypto.
 
 ## File structure
@@ -146,13 +162,14 @@ Out of scope (paper-adjacent, would deepen the mechanisation):
 | `Delivery.thy`             | Operational delivery layer: `messages_delivered_among` as the structural correct-to-correct delivery property; `mode_admissible` refined to bundle this with `wf_history`; operational versions of T6/T7. |
 | `Execution_Model.thy`      | Inductive `run_step` (internal/send/recv/byzantine) with in-flight buffer.  Proves: `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_unicast`/`_broadcast` (closes the Phase 5 gap), `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
 | `Liveness.thy`             | Real-world fairness on infinite executions: `infinite_run` (a `nat ⇒ 'p config` with adjacent `run_step`), `fair_run` (every buffered triple eventually leaves), and the liveness theorem `fair_run_delivers` (every correct-to-correct `Send` in some `E i` has a matching `Receive` in some `E j`).  Key technical lemma: `step_removes_triple_is_recv` — case analysis showing only `step_recv` can remove a buffer triple, and it adds the matching `Receive`. |
+| `Primitives.thy`           | Byzantine Reliable Unicast (BRU) and Byzantine Causal Broadcast over Byzantine Reliable Broadcast (BCB-over-BRB) named explicitly at the event-level abstraction.  `bru_satisfied`, `bcb_causal_order`, `bcb_over_brb_satisfied` predicates; operational discharge of BRU from the run model (`drained_run_satisfies_bru`, `fair_run_satisfies_bru_pointwise`); end-to-end composition theorems `T6_unicast_via_bru`, `T7_broadcast_via_bcb_over_brb`, `bru_solves_CD_B_unicast`, `bcb_over_brb_solves_CD_B_broadcast`, `fair_drained_run_solves_CD_B_unicast`/`_broadcast`. |
 | `CD_with_Crypto.thy`       | Theorems 9–14 (paper §4.4 + §4.5).  CD impossibility with crypto (T9, T10, T11) as corollaries of T3/T4/T5; CD_B possibility with crypto (T12, T13) as corollaries of T6/T7; T14 (the genuinely new multicast-with-crypto possibility) via the naive algorithm under `correct_reporting`.  Crypto is treated at the same abstraction as BRU/BCB-over-BRB: it discharges `correct_reporting` operationally, and the primitive layer is below our abstraction. |
 | `CO.thy`                   | Theorems 17 and 18 (paper §5.2).  Causal Ordering problem: `co_admissible` (CD admissibility restricted to receive-event targets), `produces_valid_F_CO`, `CO_solvable`.  Forward T17 (`CD_solvable_imp_CO_solvable`) constructive.  T18a (`CO_FN_unavoidable`) and T18b (`CO_FN_or_FP_unavoidable_internal`) by fresh-id constructions adapted to receive-event targets.  `CO_impossible_unicast`/`broadcast`/`multicast` plus `T17_CO_interreducible_with_CD` under Byzantine premises. |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
 
 A pre-built copy of the session document is committed at
-[`dist/ByzantineCD.pdf`](dist/ByzantineCD.pdf) (120 pages, A4) for
+[`dist/ByzantineCD.pdf`](dist/ByzantineCD.pdf) (125 pages, A4) for
 direct reading; regenerate it any time with
 `isabelle build -d $AFP -o document=pdf -D ByzantineCD`.
 

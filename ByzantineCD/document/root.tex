@@ -187,6 +187,14 @@ The theories are intended to be read in the following order:
         theorem \verb|fair_run_delivers| says every correct-to-
         correct \verb|Send| in a fair infinite run has a matching
         \verb|Receive| at some later step.
+  \item \verb|Primitives|: Byzantine Reliable Unicast (BRU) and
+        Byzantine Causal Broadcast over Byzantine Reliable
+        Broadcast (BCB-over-BRB) named explicitly at the event
+        level.  \verb|bru_satisfied|, \verb|bcb_causal_order|,
+        and \verb|bcb_over_brb_satisfied| predicates; operational
+        discharge of BRU from the run model; end-to-end
+        composition theorems giving operational T6 / T7 directly
+        from a fair drained run.
   \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
         causal-ordering problem CO as a strict restriction of CD
         to receive-event targets; the forward reduction CD

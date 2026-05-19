@@ -29,9 +29,12 @@ suggested order for the remaining work.
 **Scoreboard**: 18/18 fully proven.
 
 Plus paper-adjacent companion theorems: deadlock freedom on the
-inductive execution model (`Execution_Model.not_drained_can_step`)
-and liveness on infinite executions
-(`Liveness.fair_run_delivers`).
+inductive execution model (`Execution_Model.not_drained_can_step`),
+liveness on infinite executions (`Liveness.fair_run_delivers`),
+and named BRU / BCB-over-BRB primitive abstractions with end-to-
+end composition into operational T6 / T7
+(`Primitives.fair_drained_run_solves_CD_B_unicast` /
+`_broadcast`).
 
 ## Side hypotheses still on the critical path
 
@@ -75,11 +78,15 @@ arguments (T9–T11).  A deeper mechanisation would add:
   Bracha's BRB), which currently lives in the prose of
   `CD_with_Crypto.thy` but is not formalised.
 
-### 2. Operational primitives behind T6/T7
+### 2. Scheduler-level realisation of BCB causal order
 
-`CD_B_Algorithm.thy` discharges T6 and T7 conditionally on
-`correct_reporting`, with the unicast / broadcast operational
-discharge (Byzantine Reliable Unicast, Byzantine Causal Broadcast
-over Byzantine Reliable Broadcast) documented as out of scope.
-A faithful mechanisation of those primitives would close that gap
-too.
+`Primitives.thy` names BRU and BCB-over-BRB at the event-level
+abstraction and proves operational T6 / T7 composing into a fair
+drained run.  BRU is operationally realised by the existing
+inductive `run_step` (any drained run satisfies `bru_satisfied`);
+BCB's additional `bcb_causal_order` property is stated and
+threaded through the broadcast-side theorems but is not directly
+realised by `run_step` (the scheduler does not enforce
+causally-ordered `step_recv` invocations).  A scheduler-level
+refinement of `run_step` that enforces causal-order delivery
+would discharge that hypothesis operationally.
