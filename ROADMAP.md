@@ -31,10 +31,12 @@ suggested order for the remaining work.
 Plus paper-adjacent companion theorems: deadlock freedom on the
 inductive execution model (`Execution_Model.not_drained_can_step`),
 liveness on infinite executions (`Liveness.fair_run_delivers`),
-and named BRU / BCB-over-BRB primitive abstractions with end-to-
-end composition into operational T6 / T7
+named BRU / BCB-over-BRB primitive abstractions with end-to-end
+composition into operational T6 / T7
 (`Primitives.fair_drained_run_solves_CD_B_unicast` /
-`_broadcast`).
+`_broadcast`), and a fully-concrete T6 worked example
+(`T6_Concrete.T6_concrete_demo`, `T6_witnessed`) demonstrating
+T6's existential non-vacuously via an explicit three-step run.
 
 ## Side hypotheses still on the critical path
 

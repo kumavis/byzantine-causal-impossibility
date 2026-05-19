@@ -16,7 +16,7 @@ submitter would still need to do.
 - The session builds green under `isabelle build -d $AFP -D .` with
   Isabelle 2025-2 and AFP snapshot `afp-2026-05-13` (the closest
   AFP-stable release at the time of preparation).  Wall time
-  ~5s; 19 theory files.
+  ~9s; 20 theory files.
 - All proofs are declarative Isar; zero `sorry`, `oops`, `apply`,
   `sledgehammer`, or `try0` anywhere in the development.
 - All 18 of the paper's theorems are fully proven (including
@@ -24,10 +24,12 @@ submitter would still need to do.
   in `CD_with_Crypto.thy` at the same abstraction the paper
   itself takes when citing Bracha 1987 for BRB).  Paper-adjacent
   companion theorems include deadlock freedom, a fair-infinite-
-  execution liveness theorem, and named BRU / BCB-over-BRB
-  primitive abstractions in `Primitives.thy` composed into
-  operational T6 / T7 from a concrete fair drained run.  See
-  `ROADMAP.md`.
+  execution liveness theorem, named BRU / BCB-over-BRB primitive
+  abstractions in `Primitives.thy` composed into operational
+  T6 / T7 from a concrete fair drained run, and a fully-explicit
+  two-process worked example of T6 in `T6_Concrete.thy` (three
+  `run_step` transitions, the naive algorithm solving CD_B at
+  the resulting adversary).  See `ROADMAP.md`.
 
 ## What still needs to happen before submission
 
@@ -35,7 +37,7 @@ submitter would still need to do.
    ```sh
    isabelle build -d $AFP -o document=pdf -D ByzantineCD
    ```
-   produces `document.pdf` (125 pages, A4) under
+   produces `document.pdf` (134 pages, A4) under
    `<presentation-dir>/AFP/ByzantineCD/document.pdf`.  A pre-built
    copy is committed at `dist/ByzantineCD.pdf`.  The LaTeX
    toolchain used for verification was a TinyTeX install

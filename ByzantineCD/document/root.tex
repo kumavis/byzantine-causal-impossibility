@@ -195,6 +195,15 @@ The theories are intended to be read in the following order:
         discharge of BRU from the run model; end-to-end
         composition theorems giving operational T6 / T7 directly
         from a fair drained run.
+  \item \verb|T6_Concrete|: a fully-concrete worked example of
+        T6.  A two-process scenario with an explicit three-step
+        run (\verb|step_send|, \verb|step_recv|,
+        \verb|step_internal|), composed with the operational T6
+        chain to demonstrate that the existential statement
+        \verb|CD_B_solvable_with_recv Unicast correct| is non-
+        vacuously satisfiable -- there is an actual adversary,
+        an actual run, and an actual algorithm output that
+        witness it.
   \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
         causal-ordering problem CO as a strict restriction of CD
         to receive-event targets; the forward reduction CD

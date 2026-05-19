@@ -250,13 +250,14 @@ the per-theorem status table.
 | `Execution_Model.thy` — inductive `run_step` + invariants       | Done.  `fairness_implies_delivery`, `wf_history_run`, `run_completes_to_mode_admissible_*`, `buffer_correct_inv`, `not_drained_can_step` (deadlock freedom). |
 | `Liveness.thy` — fair infinite executions                       | Done.  `infinite_run`, `fair_run`, `step_removes_triple_is_recv`, `fair_run_delivers` (liveness theorem). |
 | `Primitives.thy` — BRU / BCB-over-BRB                           | Done.  Named primitive abstractions `bru_satisfied`, `bcb_causal_order`, `bcb_over_brb_satisfied`; operational discharge of BRU from the run model; end-to-end composition into operational T6 / T7 (`bru_solves_CD_B_unicast`, `bcb_over_brb_solves_CD_B_broadcast`, `fair_drained_run_solves_CD_B_*`). |
+| `T6_Concrete.thy` — concrete T6 demo                            | Done.  A fully-explicit two-process worked example: `demo_H`, `demo_adv`, `demo_cfg1/2/3`, three `run_step` transitions, composition with `fair_drained_run_solves_CD_B_unicast` into `T6_concrete_demo` and the existential witness `T6_witnessed`. |
 | `CO.thy` — Theorems 17, 18                                      | Done.  CO problem as receive-event-target restriction of CD; T17 forward; T18 FN-unavoidable + FN-or-FP-unavoidable; CO impossibility + T17 interreducibility. |
 | `CD_with_Crypto.thy` — Theorems 9–14                            | Done.  T9/T10/T11 corollaries of T3/T4/T5; T12/T13 corollaries of T6/T7; T14 new (multicast + crypto possible). |
 | `Foundation_Vacuity.thy`                                        | Regression diagnostic. |
 | `ROOT`, `document/root.tex`, `document/root.bib`                | Done. |
 | Declarative Isar, no apply-style, no silent gaps                | Audited.  `grep` for `apply\|sorry\|oops\|sledgehammer\|try0` in `ByzantineCD/*.thy` returns nothing. |
-| `isabelle build -D .` succeeds                                  | **Verified** on Isabelle 2025-2 + AFP snapshot `afp-2026-05-13`.  Wall time ~5s, 19 theory files at 100%, 0 `sorry`/`oops`. |
-| `isabelle build -o document=pdf -D .` succeeds                  | **Verified** on the same toolchain.  Produces `document.pdf` (125 pages, A4).  A committed snapshot is at `dist/ByzantineCD.pdf`. |
+| `isabelle build -D .` succeeds                                  | **Verified** on Isabelle 2025-2 + AFP snapshot `afp-2026-05-13`.  Wall time ~9s, 20 theory files at 100%, 0 `sorry`/`oops`. |
+| `isabelle build -o document=pdf -D .` succeeds                  | **Verified** on the same toolchain.  Produces `document.pdf` (134 pages, A4).  A committed snapshot is at `dist/ByzantineCD.pdf`. |
 
 ### Build verification (post-hoc)
 
