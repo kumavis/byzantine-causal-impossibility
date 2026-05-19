@@ -204,6 +204,13 @@ The theories are intended to be read in the following order:
         vacuously satisfiable -- there is an actual adversary,
         an actual run, and an actual algorithm output that
         witness it.
+  \item \verb|T6_Multihop|: a three-process two-hop variant of
+        the T6 demo.  Five \verb|run_step| transitions cover a
+        bhb chain crossing three processes ($p_b$ sends to $p_a$,
+        $p_a$ relays to $p_c$, $p_c$'s target internal event);
+        \verb|multi_bhb_chain| proves the four-edge bhb path,
+        \verb|T6_multihop_demo| and \verb|T6_multihop_witnessed|
+        mirror the 1-message demo at the bigger scale.
   \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
         causal-ordering problem CO as a strict restriction of CD
         to receive-event targets; the forward reduction CD

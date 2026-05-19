@@ -34,9 +34,12 @@ liveness on infinite executions (`Liveness.fair_run_delivers`),
 named BRU / BCB-over-BRB primitive abstractions with end-to-end
 composition into operational T6 / T7
 (`Primitives.fair_drained_run_solves_CD_B_unicast` /
-`_broadcast`), and a fully-concrete T6 worked example
+`_broadcast`), a fully-concrete T6 worked example
 (`T6_Concrete.T6_concrete_demo`, `T6_witnessed`) demonstrating
-T6's existential non-vacuously via an explicit three-step run.
+T6's existential non-vacuously via an explicit three-step run,
+and a multihop T6 demo (`T6_Multihop.T6_multihop_demo`,
+`multi_bhb_chain`) covering a four-edge bhb chain across three
+correct processes.
 
 ## Side hypotheses still on the critical path
 

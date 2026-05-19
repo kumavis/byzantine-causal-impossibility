@@ -19,7 +19,7 @@ Wilhelm-Weidner, Peters, Nestmann, 2025-03).
 ## Status
 
 The session compiles against **Isabelle 2025-2 + AFP snapshot
-`afp-2026-05-13`** in **~9 s** wall time, **20 theory files** at
+`afp-2026-05-13`** in **~10 s** wall time, **21 theory files** at
 100%, **0** `sorry` / `oops` / `apply` / `sledgehammer` in any proof.
 
 Reproducing:
@@ -109,6 +109,15 @@ Fully proven:
   resulting adversary.  Witnesses T6's existential
   non-vacuously: there is an actual adversary, an actual run, and
   an actual algorithm output.
+- **Multihop T6 demo** (`T6_Multihop.thy`): a three-process
+  scenario with a two-hop bhb chain.  Five `run_step` transitions
+  (`p_b → p_a → p_c` with two messages and an internal target at
+  `p_c`), the resulting chain `Send p_b ... → Receive p_a ... →
+  Send p_a ... → Receive p_c ... → Internal p_c ...` proven to
+  be a genuine bhb path in `multi_bhb_chain`, and the naive
+  algorithm proven to solve CD_B at the chain's endpoint.
+  Demonstrates that T6 correctly handles transitive causality
+  across multiple correct processes.
 - **Theorems 9–14** (paper §4.4 + §4.5, `CD_with_Crypto.thy`):
   CD impossibility under unicast / broadcast / multicast even
   with cryptography (T9, T10, T11) — direct corollaries of
@@ -172,13 +181,14 @@ Out of scope (paper-adjacent, would deepen the mechanisation):
 | `Liveness.thy`             | Real-world fairness on infinite executions: `infinite_run` (a `nat ⇒ 'p config` with adjacent `run_step`), `fair_run` (every buffered triple eventually leaves), and the liveness theorem `fair_run_delivers` (every correct-to-correct `Send` in some `E i` has a matching `Receive` in some `E j`).  Key technical lemma: `step_removes_triple_is_recv` — case analysis showing only `step_recv` can remove a buffer triple, and it adds the matching `Receive`. |
 | `Primitives.thy`           | Byzantine Reliable Unicast (BRU) and Byzantine Causal Broadcast over Byzantine Reliable Broadcast (BCB-over-BRB) named explicitly at the event-level abstraction.  `bru_satisfied`, `bcb_causal_order`, `bcb_over_brb_satisfied` predicates; operational discharge of BRU from the run model (`drained_run_satisfies_bru`, `fair_run_satisfies_bru_pointwise`); end-to-end composition theorems `T6_unicast_via_bru`, `T7_broadcast_via_bcb_over_brb`, `bru_solves_CD_B_unicast`, `bcb_over_brb_solves_CD_B_broadcast`, `fair_drained_run_solves_CD_B_unicast`/`_broadcast`. |
 | `T6_Concrete.thy`          | Fully-concrete worked example of T6.  Two distinct correct processes `p_a`, `p_b`; explicit three-step `run_step` sequence (`step_send`, `step_recv`, `step_internal`); proofs that the run is fair, drained, well-formed; composition with `fair_drained_run_solves_CD_B_unicast` to demonstrate the naive algorithm solving CD_B at the resulting adversary.  Witnesses that T6's existential statement is non-vacuously satisfiable. |
+| `T6_Multihop.thy`          | Three-process two-hop variant of the T6 demo.  Five-step `run_step` sequence through three distinct correct processes (`p_b → p_a → p_c`) with two messages; theorem `multi_bhb_chain` proves the resulting four-edge bhb path; `T6_multihop_demo` and `T6_multihop_witnessed` parallel the 1-message demo at the bigger scale.  Demonstrates that T6 correctly handles transitive causality. |
 | `CD_with_Crypto.thy`       | Theorems 9–14 (paper §4.4 + §4.5).  CD impossibility with crypto (T9, T10, T11) as corollaries of T3/T4/T5; CD_B possibility with crypto (T12, T13) as corollaries of T6/T7; T14 (the genuinely new multicast-with-crypto possibility) via the naive algorithm under `correct_reporting`.  Crypto is treated at the same abstraction as BRU/BCB-over-BRB: it discharges `correct_reporting` operationally, and the primitive layer is below our abstraction. |
 | `CO.thy`                   | Theorems 17 and 18 (paper §5.2).  Causal Ordering problem: `co_admissible` (CD admissibility restricted to receive-event targets), `produces_valid_F_CO`, `CO_solvable`.  Forward T17 (`CD_solvable_imp_CO_solvable`) constructive.  T18a (`CO_FN_unavoidable`) and T18b (`CO_FN_or_FP_unavoidable_internal`) by fresh-id constructions adapted to receive-event targets.  `CO_impossible_unicast`/`broadcast`/`multicast` plus `T17_CO_interreducible_with_CD` under Byzantine premises. |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
 
 A pre-built copy of the session document is committed at
-[`dist/ByzantineCD.pdf`](dist/ByzantineCD.pdf) (134 pages, A4) for
+[`dist/ByzantineCD.pdf`](dist/ByzantineCD.pdf) (146 pages, A4) for
 direct reading; regenerate it any time with
 `isabelle build -d $AFP -o document=pdf -D ByzantineCD`.
 

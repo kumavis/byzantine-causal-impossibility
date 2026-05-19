@@ -16,7 +16,7 @@ submitter would still need to do.
 - The session builds green under `isabelle build -d $AFP -D .` with
   Isabelle 2025-2 and AFP snapshot `afp-2026-05-13` (the closest
   AFP-stable release at the time of preparation).  Wall time
-  ~9s; 20 theory files.
+  ~10s; 21 theory files.
 - All proofs are declarative Isar; zero `sorry`, `oops`, `apply`,
   `sledgehammer`, or `try0` anywhere in the development.
 - All 18 of the paper's theorems are fully proven (including
@@ -37,7 +37,7 @@ submitter would still need to do.
    ```sh
    isabelle build -d $AFP -o document=pdf -D ByzantineCD
    ```
-   produces `document.pdf` (134 pages, A4) under
+   produces `document.pdf` (146 pages, A4) under
    `<presentation-dir>/AFP/ByzantineCD/document.pdf`.  A pre-built
    copy is committed at `dist/ByzantineCD.pdf`.  The LaTeX
    toolchain used for verification was a TinyTeX install

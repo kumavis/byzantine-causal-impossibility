@@ -32,6 +32,7 @@ session ByzantineCD (AFP) = FLP +
     Liveness
     Primitives
     T6_Concrete
+    T6_Multihop
     CD_vs_Consensus
     CO
     CD_with_Crypto
