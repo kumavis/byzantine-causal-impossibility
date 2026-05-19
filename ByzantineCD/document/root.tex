@@ -211,6 +211,15 @@ The theories are intended to be read in the following order:
         \verb|multi_bhb_chain| proves the four-edge bhb path,
         \verb|T6_multihop_demo| and \verb|T6_multihop_witnessed|
         mirror the 1-message demo at the bigger scale.
+  \item \verb|T6_With_Byzantine|: a T6 demo with a Byzantine
+        bystander.  Two correct processes plus a Byzantine $p_c$
+        performing an arbitrary local internal event (exercises
+        \verb|step_byzantine|, unused in the other demos);
+        \verb|byzantine_event_not_on_bhb_chain_*| proves the
+        Byzantine's event is excluded from every bhb chain by
+        \verb|bhb_proc_of_endpoints|; \verb|T6_with_byzantine_demo|
+        and \verb|T6_with_byzantine_witnessed| demonstrate T6's
+        robustness to live Byzantine activity.
   \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
         causal-ordering problem CO as a strict restriction of CD
         to receive-event targets; the forward reduction CD

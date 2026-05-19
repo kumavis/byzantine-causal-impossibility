@@ -37,9 +37,12 @@ composition into operational T6 / T7
 `_broadcast`), a fully-concrete T6 worked example
 (`T6_Concrete.T6_concrete_demo`, `T6_witnessed`) demonstrating
 T6's existential non-vacuously via an explicit three-step run,
-and a multihop T6 demo (`T6_Multihop.T6_multihop_demo`,
+a multihop T6 demo (`T6_Multihop.T6_multihop_demo`,
 `multi_bhb_chain`) covering a four-edge bhb chain across three
-correct processes.
+correct processes, and a Byzantine-bystander T6 demo
+(`T6_With_Byzantine.T6_with_byzantine_demo`,
+`byzantine_event_not_on_bhb_chain_*`) showing T6's robustness
+to live Byzantine activity via `step_byzantine`.
 
 ## Side hypotheses still on the critical path
 
