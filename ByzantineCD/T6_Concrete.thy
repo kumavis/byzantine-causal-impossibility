@@ -152,7 +152,6 @@ text \<open>Step 1: \<open>p_b\<close> sends to \<open>p_a\<close>, getting the 
 lemma demo_step_send:
   assumes pa: "p_a \<in> correct"
       and pb: "p_b \<in> correct"
-      and dist: "p_a \<noteq> p_b"
   shows "run_step init_config (demo_cfg1 p_a p_b)"
 proof -
   let ?cfg0 = "init_config"
@@ -218,7 +217,6 @@ local history at the target event.\<close>
 
 lemma demo_step_internal:
   assumes pa: "p_a \<in> correct"
-      and pb: "p_b \<in> correct"
       and dist: "p_a \<noteq> p_b"
   shows "run_step (demo_cfg2 p_a p_b) (demo_cfg3 p_a p_b)"
 proof -
@@ -258,7 +256,7 @@ lemma demo_run:
 proof -
   have base: "run init_config" by simp
   have s1: "run_step init_config (demo_cfg1 p_a p_b)"
-    by (rule demo_step_send[OF pa pb dist])
+    by (rule demo_step_send[OF pa pb])
   have r1: "run (demo_cfg1 p_a p_b)"
     by (rule run_extend[OF base s1])
   have s2: "run_step (demo_cfg1 p_a p_b) (demo_cfg2 p_a p_b)"
@@ -266,7 +264,7 @@ proof -
   have r2: "run (demo_cfg2 p_a p_b)"
     by (rule run_extend[OF r1 s2])
   have s3: "run_step (demo_cfg2 p_a p_b) (demo_cfg3 p_a p_b)"
-    by (rule demo_step_internal[OF pa pb dist])
+    by (rule demo_step_internal[OF pa dist])
   show ?thesis by (rule run_extend[OF r2 s3])
 qed
 

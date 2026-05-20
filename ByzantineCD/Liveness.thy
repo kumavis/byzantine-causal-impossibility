@@ -5,8 +5,18 @@
 
   Real-world fairness on the inductive execution model of
   Execution_Model.thy.  Closes the closing-remarks gap of that
-  theory: "every fair infinite execution eventually has empty
-  buffer".
+  theory by proving a per-event liveness theorem: in any fair
+  infinite execution, every correct-to-correct Send event
+  eventually has a matching Receive in the global history.
+
+  This is the per-event form of the "fairness implies delivery"
+  story (cf. \<open>fairness_implies_delivery\<close> for finite drained
+  runs).  We do not prove the stronger "every fair infinite
+  execution reaches a state with empty buffer" claim, because
+  algorithms that continually send more messages keep the buffer
+  non-empty even while every individual triple is eventually
+  drained -- the per-event form is what downstream developments
+  actually need.
 
   The infinite-execution layer is modelled as
   \<open>nat \<Rightarrow> 'p config\<close> with a side condition that each adjacent
@@ -393,23 +403,10 @@ proof -
   qed
 qed
 
-text \<open>A useful packaging of the liveness theorem at the
-@{const messages_delivered_among} level, ranging over a fixed
-"sufficiently late" index.  Saying ``every send is eventually
-delivered'' is the same as ``the union of histories
-\<open>\<Union>_i events_of (cfg_hist (E i))\<close> satisfies
-\<open>messages_delivered_among correct\<close>''.\<close>
-
-definition history_union :: "(nat \<Rightarrow> 'p config) \<Rightarrow> 'p history" where
-  "history_union E = (\<lambda>p. SOME es.
-                            (\<exists>i. es = cfg_hist (E i) p
-                                  \<and> (\<forall>j \<ge> i. cfg_hist (E j) p = es)))"
-
-text \<open>The \<open>history_union\<close> definition above is a stub for a fuller
-treatment.  The temporally-informed statement that is actually
-useful in downstream developments is the form below: it says that
-the messages-delivered property is achieved cumulatively over the
-infinite run, not at any single index.\<close>
+text \<open>The temporally-informed packaging of the liveness theorem:
+the messages-delivered property is achieved cumulatively over
+the infinite run, not at any single index.  This is what
+downstream developments actually need.\<close>
 
 theorem fair_run_delivers_all:
   assumes inf:  "infinite_run E"
