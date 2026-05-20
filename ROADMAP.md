@@ -3,6 +3,9 @@
 Per-theorem status against the paper's 18 theorems, plus the
 suggested order for the remaining work.
 
+For a simple-English walk-through of every theorem with paper
+quotes and divergence notes, see [`PROOFS.md`](PROOFS.md).
+
 ## Status summary
 
 | § | Thm | Statement | Status | Where |

@@ -39,6 +39,10 @@ so the build is robust to AFP's `FLP` entry not exposing a
 See [`ROADMAP.md`](ROADMAP.md) for the up-to-date status of every
 theorem in the paper and what remains as future work.
 
+See [`PROOFS.md`](PROOFS.md) for a simple-English guided tour of
+every theorem with paper quotes, proof sketches, and divergence
+notes.
+
 ## Scope
 
 All 18 of the paper's theorems are fully proven (see
