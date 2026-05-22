@@ -19,7 +19,7 @@ Wilhelm-Weidner, Peters, Nestmann, 2025-03).
 ## Status
 
 The session compiles against **Isabelle 2025-2 + AFP snapshot
-`afp-2026-05-13`** in **~11 s** wall time, **22 theory files** at
+`afp-2026-05-13`** in **~12 s** wall time, **23 theory files** at
 100%, **0** `sorry` / `oops` / `apply` / `sledgehammer` in any proof.
 
 Reproducing:
@@ -133,6 +133,21 @@ Fully proven:
   `T6_with_byzantine_demo` shows the naive algorithm still
   solves CD_B at the correct target — concrete demonstration of
   T6's Byzantine-robustness.
+- **Causal scheduler refinement** (`Causal_Scheduler.thy`):
+  scheduler-level operational realisation of BCB's
+  causal-order delivery (paper §4.3).  Refines `run_step` to
+  `causal_run_step` by adding (a) freshness at `step_send` and
+  (b) a BHB-predecessor causal precondition at `step_recv`.
+  Proves uniqueness of correct-to-correct sends/receives
+  (`send_unique_run`, `recv_unique_run`), preservation of a joint
+  `causal_inv` invariant, and the BHB-version BCB causal-order
+  theorem `causal_run_satisfies_bhb_causal_order`: at any
+  reachable configuration, every BHB-ordered pair of
+  correct-to-correct sends to the same correct receiver has
+  BHB-ordered matching receives.  End-to-end
+  `fair_drained_causal_run_solves_CD_B_broadcast` closes the
+  operational T7 chain — no operational hypothesis is left to
+  the user.
 - **Theorems 9–14** (paper §4.4 + §4.5, `CD_with_Crypto.thy`):
   CD impossibility under unicast / broadcast / multicast even
   with cryptography (T9, T10, T11) — direct corollaries of
@@ -165,13 +180,14 @@ Out of scope (paper-adjacent, would deepen the mechanisation):
   collision-resistant hashes, and recursive hash histories would
   let us state the paper's quantitative FP-prevention qualifier
   (FP prevented for `t < n/3` under Bracha's BRB).
-- **Operational realisation of BCB causal order.**  `Primitives.thy`
-  states `bcb_causal_order` and connects it to the broadcast-mode
-  CD_B solvability theorem, but the underlying `run_step`
-  scheduler does not enforce causal order on `step_recv`.  A
-  scheduler-level refinement of the model would discharge that
-  property operationally; we leave it out of scope at the same
-  abstraction as crypto.
+- ~~**Operational realisation of BCB causal order.**~~ *(done in
+  `Causal_Scheduler.thy`.)*  The scheduler-level refinement
+  `causal_run_step` and the BHB-version BCB theorem
+  `causal_run_satisfies_bhb_causal_order` discharge this
+  operationally.  `Primitives.thy`'s `bcb_causal_order` (which uses
+  plain `hb`) is retained as a parallel statement; the BHB-version
+  is what the paper's Definition 3 actually talks about and is what
+  the scheduler refinement realises.
 
 ## File structure
 
@@ -198,14 +214,15 @@ Out of scope (paper-adjacent, would deepen the mechanisation):
 | `T6_Concrete.thy`          | Fully-concrete worked example of T6.  Two distinct correct processes `p_a`, `p_b`; explicit three-step `run_step` sequence (`step_send`, `step_recv`, `step_internal`); proofs that the run is fair, drained, well-formed; composition with `fair_drained_run_solves_CD_B_unicast` to demonstrate the naive algorithm solving CD_B at the resulting adversary.  Witnesses that T6's existential statement is non-vacuously satisfiable. |
 | `T6_Multihop.thy`          | Three-process two-hop variant of the T6 demo.  Five-step `run_step` sequence through three distinct correct processes (`p_b → p_a → p_c`) with two messages; theorem `multi_bhb_chain` proves the resulting four-edge bhb path; `T6_multihop_demo` and `T6_multihop_witnessed` parallel the 1-message demo at the bigger scale.  Demonstrates that T6 correctly handles transitive causality. |
 | `T6_With_Byzantine.thy`    | T6 demo with a Byzantine bystander.  Two correct processes plus a Byzantine `p_c` running an internal event during the exchange (exercises `step_byzantine`).  `byzantine_event_not_on_bhb_chain_*` show the Byzantine event is excluded from every bhb chain by `bhb_proc_of_endpoints`.  `T6_with_byzantine_demo` and `T6_with_byzantine_witnessed` demonstrate the algorithm still solves CD_B at the correct target. |
+| `Causal_Scheduler.thy`     | Scheduler-level refinement realising BCB causal-order delivery operationally.  Refines `run_step` to `causal_run_step` (freshness at send, BHB-predecessor causal precondition at receive); proves a joint `causal_inv` invariant (send/recv uniqueness, buffer count, delivered-drained, recv-implies-send); proves BHB-step sink-ness for each new event plus BHB monotonicity-down; closes with `causal_run_satisfies_bhb_causal_order` and end-to-end `fair_drained_causal_run_solves_CD_B_broadcast`/`_unicast`. |
 | `CD_with_Crypto.thy`       | Theorems 9–14 (paper §4.4 + §4.5).  CD impossibility with crypto (T9, T10, T11) as corollaries of T3/T4/T5; CD_B possibility with crypto (T12, T13) as corollaries of T6/T7; T14 (the genuinely new multicast-with-crypto possibility) via the naive algorithm under `correct_reporting`.  Crypto is treated at the same abstraction as BRU/BCB-over-BRB: it discharges `correct_reporting` operationally, and the primitive layer is below our abstraction. |
 | `CO.thy`                   | Theorems 17 and 18 (paper §5.2).  Causal Ordering problem: `co_admissible` (CD admissibility restricted to receive-event targets), `produces_valid_F_CO`, `CO_solvable`.  Forward T17 (`CD_solvable_imp_CO_solvable`) constructive.  T18a (`CO_FN_unavoidable`) and T18b (`CO_FN_or_FP_unavoidable_internal`) by fresh-id constructions adapted to receive-event targets.  `CO_impossible_unicast`/`broadcast`/`multicast` plus `T17_CO_interreducible_with_CD` under Byzantine premises. |
 | `document/root.tex`        | AFP-style cover-page LaTeX (title, abstract, table of contents, reading-order guide).                                |
 | `document/root.bib`        | Bibliography (source paper, AFP-FLP entry, Lamport 1978).                                                            |
 
 A pre-built copy of the session document is committed at
-[`dist/ByzantineCD.pdf`](dist/ByzantineCD.pdf) (155 pages, A4) for
-direct reading; regenerate it any time with
+[`dist/ByzantineCD.pdf`](dist/ByzantineCD.pdf) for direct reading;
+regenerate it any time with
 `isabelle build -d $AFP -o document=pdf -D ByzantineCD`.
 
 See [`AFP_SUBMISSION.md`](AFP_SUBMISSION.md) at the repo root for

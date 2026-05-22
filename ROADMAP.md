@@ -42,10 +42,14 @@ composition into operational T6 / T7
 T6's existential non-vacuously via an explicit three-step run,
 a multihop T6 demo (`T6_Multihop.T6_multihop_demo`,
 `multi_bhb_chain`) covering a four-edge bhb chain across three
-correct processes, and a Byzantine-bystander T6 demo
+correct processes, a Byzantine-bystander T6 demo
 (`T6_With_Byzantine.T6_with_byzantine_demo`,
 `byzantine_event_not_on_bhb_chain_*`) showing T6's robustness
-to live Byzantine activity via `step_byzantine`.
+to live Byzantine activity via `step_byzantine`, and a
+scheduler-level operational realisation of BCB's causal-order
+delivery (`Causal_Scheduler.causal_run_satisfies_bhb_causal_order`,
+`fair_drained_causal_run_solves_CD_B_broadcast`) that closes the
+last operational hypothesis on T7's chain.
 
 ## Side hypotheses still on the critical path
 
@@ -89,15 +93,16 @@ arguments (T9–T11).  A deeper mechanisation would add:
   Bracha's BRB), which currently lives in the prose of
   `CD_with_Crypto.thy` but is not formalised.
 
-### 2. Scheduler-level realisation of BCB causal order
+### 2. ~~Scheduler-level realisation of BCB causal order~~ (now done)
 
-`Primitives.thy` names BRU and BCB-over-BRB at the event-level
-abstraction and proves operational T6 / T7 composing into a fair
-drained run.  BRU is operationally realised by the existing
-inductive `run_step` (any drained run satisfies `bru_satisfied`);
-BCB's additional `bcb_causal_order` property is stated and
-threaded through the broadcast-side theorems but is not directly
-realised by `run_step` (the scheduler does not enforce
-causally-ordered `step_recv` invocations).  A scheduler-level
-refinement of `run_step` that enforces causal-order delivery
-would discharge that hypothesis operationally.
+`Causal_Scheduler.thy` discharges this follow-on: it introduces
+`causal_run_step` as a refinement of `run_step` with two added
+side conditions -- freshness at `step_send` and a BHB-predecessor
+causal precondition at `step_recv` -- and proves
+(`causal_run_satisfies_bhb_causal_order`) that any reachable
+configuration satisfies the Byzantine-happened-before version of
+BCB's causal-order property (paper Definition 3 + Section 4.3),
+which is the paper-faithful form of BCB.  Composing with the
+existing `T7_broadcast_via_bcb_over_brb` gives a fully discharged
+operational T7 (`fair_drained_causal_run_solves_CD_B_broadcast`)
+where no operational hypothesis is left to the user.

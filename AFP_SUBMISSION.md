@@ -16,7 +16,7 @@ submitter would still need to do.
 - The session builds green under `isabelle build -d $AFP -D .` with
   Isabelle 2025-2 and AFP snapshot `afp-2026-05-13` (the closest
   AFP-stable release at the time of preparation).  Wall time
-  ~11s; 22 theory files.
+  ~12s; 23 theory files.
 - All proofs are declarative Isar; zero `sorry`, `oops`, `apply`,
   `sledgehammer`, or `try0` anywhere in the development.
 - All 18 of the paper's theorems are fully proven (including

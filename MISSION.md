@@ -253,13 +253,14 @@ the per-theorem status table.
 | `T6_Concrete.thy` — concrete T6 demo                            | Done.  A fully-explicit two-process worked example: `demo_H`, `demo_adv`, `demo_cfg1/2/3`, three `run_step` transitions, composition with `fair_drained_run_solves_CD_B_unicast` into `T6_concrete_demo` and the existential witness `T6_witnessed`. |
 | `T6_Multihop.thy` — multihop T6 demo                            | Done.  Three-process two-hop scenario; five `run_step` transitions; `multi_bhb_chain` proves the four-edge bhb path; `T6_multihop_demo` / `T6_multihop_witnessed` mirror the 1-message demo at the bigger scale. |
 | `T6_With_Byzantine.thy` — Byzantine-bystander T6 demo           | Done.  Two correct processes + one Byzantine; four `run_step` transitions including `step_byzantine`; `byzantine_event_not_on_bhb_chain_*` proves the Byzantine's local event is excluded from every bhb chain; `T6_with_byzantine_demo` / `T6_with_byzantine_witnessed` demonstrate T6's robustness to live Byzantine activity. |
+| `Causal_Scheduler.thy` — operational BCB realisation            | Done.  Refines `run_step` to `causal_run_step` with freshness at send + BHB-predecessor causal precondition at receive; joint `causal_inv` invariant (send/recv uniqueness, buffer count, delivered-drained, recv-implies-send); BHB-step sink lemmas + monotonicity-down; headline `causal_run_satisfies_bhb_causal_order`; end-to-end `fair_drained_causal_run_solves_CD_B_broadcast` / `_unicast`. |
 | `CO.thy` — Theorems 17, 18                                      | Done.  CO problem as receive-event-target restriction of CD; T17 forward; T18 FN-unavoidable + FN-or-FP-unavoidable; CO impossibility + T17 interreducibility. |
 | `CD_with_Crypto.thy` — Theorems 9–14                            | Done.  T9/T10/T11 corollaries of T3/T4/T5; T12/T13 corollaries of T6/T7; T14 new (multicast + crypto possible). |
 | `Foundation_Vacuity.thy`                                        | Regression diagnostic. |
 | `ROOT`, `document/root.tex`, `document/root.bib`                | Done. |
 | Declarative Isar, no apply-style, no silent gaps                | Audited.  `grep` for `apply\|sorry\|oops\|sledgehammer\|try0` in `ByzantineCD/*.thy` returns nothing. |
-| `isabelle build -D .` succeeds                                  | **Verified** on Isabelle 2025-2 + AFP snapshot `afp-2026-05-13`.  Wall time ~11s, 22 theory files at 100%, 0 `sorry`/`oops`. |
-| `isabelle build -o document=pdf -D .` succeeds                  | **Verified** on the same toolchain.  Produces `document.pdf` (155 pages, A4).  A committed snapshot is at `dist/ByzantineCD.pdf`. |
+| `isabelle build -D .` succeeds                                  | **Verified** on Isabelle 2025-2 + AFP snapshot `afp-2026-05-13`.  Wall time ~12s, 23 theory files at 100%, 0 `sorry`/`oops`. |
+| `isabelle build -o document=pdf -D .` succeeds                  | **Verified** on the same toolchain.  Produces `document.pdf` (A4).  A committed snapshot is at `dist/ByzantineCD.pdf`. |
 
 ### Build verification (post-hoc)
 

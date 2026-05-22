@@ -675,6 +675,61 @@ rules (`step_internal`, `step_send`, `step_recv`,
 `step_byzantine`) and demonstrate T6 in single-message,
 multi-hop, and Byzantine-bystander scenarios.
 
+### Causal scheduler — operational discharge of BCB
+
+`Causal_Scheduler.thy` introduces `causal_run_step`, a strict
+refinement of `run_step` with two added side conditions:
+
+1. **Freshness at send.** `step_send` requires the triple
+   `(p, q, m)` to be fresh (no prior Send for the same triple,
+   no in-flight buffer entry).  This matches the paper's
+   implicit "messages carry unique ids" assumption.
+2. **Causal precondition at receive.** `step_recv` requires
+   that every Byzantine-happened-before predecessor send to
+   the same correct receiver has already been delivered.
+
+The proofs build a joint invariant `causal_inv` (sends and
+receives are unique correct-to-correct, buffer entries respect
+that uniqueness, and once delivered the buffer is drained),
+plus a separate joint invariant `recv_causal_inv`/`recv_order_inv`
+that propagates the causal precondition forward into the run
+history.
+
+**Why BHB rather than HB.**  Byzantine processes can fabricate
+arbitrary `Receive`-shaped local events via `step_byzantine`,
+which can introduce `hb` chains through Byzantine intermediaries
+that no correct-process scheduler can constrain.  Paper
+Definition 3 restricts hb to chains through correct processes
+precisely to sidestep this, and §4.3's BCB is stated in terms
+of the Byzantine happened-before relation.  Our operational
+discharge is therefore in terms of `bhb`, in
+`causal_run_satisfies_bhb_causal_order`.
+
+**Key technical lemmas.**
+- `causal_step_new_event_sink`: every `causal_run_step`
+  appends one event that has no outgoing `bhb_step` edge in
+  the extended history.
+- `bhb_extend_down`: restriction of `bhb` chains to a sub-
+  history when the appended event is a `bhb_step` sink.
+- `hist_extend_unique`: a single-event history extension is
+  uniquely determined by the appended process and event,
+  letting the abstract `hist_extend` pulled from
+  `causal_step_new_event_sink` be identified with the
+  rule-specific data exposed by a case analysis on the
+  `causal_run_step` rule.
+
+**Composition.**  `fair_drained_causal_run_solves_CD_B_broadcast`
+chains the operational T7 (`T7_broadcast_via_bcb_over_brb`)
+through the causal-run model.  The unicast counterpart
+(`fair_drained_causal_run_solves_CD_B_unicast`) reuses the
+same chain; unicast does not require BCB at all (`bru_satisfied`
+suffices), but the unified entry point is convenient.
+
+The matching `bcb_causal_order` predicate in `Primitives.thy`
+(which uses plain `hb`) is retained as a parallel statement;
+the BHB-version `bhb_causal_order` we prove here is what the
+paper's Definition 3 actually talks about.
+
 ---
 
 ## Index of all theorem names
@@ -727,11 +782,14 @@ Concrete T6 (multihop):  T6_Multihop.{T6_multihop_demo, T6_multihop_witnessed, m
 Concrete T6 (Byzantine): T6_With_Byzantine.{T6_with_byzantine_demo, T6_with_byzantine_witnessed,
                                             byzantine_event_not_on_bhb_chain_left,
                                             byzantine_event_not_on_bhb_chain_right}
+Causal scheduler:        Causal_Scheduler.{causal_run_step, causal_run_satisfies_bhb_causal_order,
+                                           causal_run_satisfies_bhb_over_brb,
+                                           fair_drained_causal_run_solves_CD_B_broadcast,
+                                           fair_drained_causal_run_solves_CD_B_unicast}
 ```
 
 For the *side hypotheses* the headline theorems take (a single
 finiteness condition `fin_cd`, identical in shape to T1's
 `fin_F`), see [`README.md`'s "Assumptions" section](README.md#assumptions-introduced-beyond-the-paper).
 For the *out-of-scope optional follow-ons* (a concrete
-cryptographic primitive layer; a scheduler-level realisation of
-BCB causal order), see [`ROADMAP.md`](ROADMAP.md).
+cryptographic primitive layer), see [`ROADMAP.md`](ROADMAP.md).

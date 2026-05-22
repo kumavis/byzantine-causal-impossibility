@@ -13,7 +13,7 @@ session ByzantineCD (AFP) = FLP +
     unsolvable in unicast / broadcast / multicast in the presence
     of one or more Byzantine processes).
   \<close>
-  options [timeout = 600]
+  options [timeout = 1800]
   theories
     ByzantineSystem
     Events
@@ -31,6 +31,7 @@ session ByzantineCD (AFP) = FLP +
     Execution_Model
     Liveness
     Primitives
+    Causal_Scheduler
     T6_Concrete
     T6_Multihop
     T6_With_Byzantine

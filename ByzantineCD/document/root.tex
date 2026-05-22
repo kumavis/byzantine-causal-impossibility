@@ -106,6 +106,18 @@ with the \verb|fin_F| of Theorem 1 (\verb|CD_FN_unavoidable|) ---
 and no other meta-level assumptions.  No HOL axioms, no locale
 axioms on the impossibility chain.
 
+A scheduler-level refinement \verb|Causal_Scheduler.thy|
+operationally realises Byzantine Causal Broadcast's causal-order
+delivery property: \verb|causal_run_step| is a strict refinement
+of \verb|run_step| with freshness at send and a
+Byzantine-happened-before predecessor causal precondition at
+receive; the resulting Byzantine-happened-before version of BCB's
+causal-order property
+(\verb|causal_run_satisfies_bhb_causal_order|) is what paper
+Definition 3 calls for, and end-to-end composition into T7
+(\verb|fair_drained_causal_run_solves_CD_B_broadcast|) closes the
+chain with no operational hypothesis left to the user.
+
 The proof routes directly through Theorem 1: \verb|CD_solvable|
 extracts a \verb|produces_valid_F| witness, which Theorem 1
 defeats with an admissible Byzantine adversary.  The paper's
@@ -220,6 +232,20 @@ The theories are intended to be read in the following order:
         \verb|bhb_proc_of_endpoints|; \verb|T6_with_byzantine_demo|
         and \verb|T6_with_byzantine_witnessed| demonstrate T6's
         robustness to live Byzantine activity.
+  \item \verb|Causal_Scheduler|: scheduler-level refinement of
+        \verb|run_step| that operationally realises BCB's
+        causal-order delivery primitive (paper Section 4.3).
+        Adds two side conditions to \verb|run_step|: freshness at
+        \verb|step_send| (correct-to-correct triples are sent
+        at most once) and a Byzantine-happened-before predecessor
+        causal precondition at \verb|step_recv|.  Proves a joint
+        invariant (send and receive uniqueness, buffer count,
+        delivered-drained, receive-implies-send), the
+        Byzantine-happened-before version of BCB causal-order
+        (\verb|causal_run_satisfies_bhb_causal_order|), and
+        end-to-end composition into operational T7
+        (\verb|fair_drained_causal_run_solves_CD_B_broadcast|),
+        closing the last operational hypothesis on the T7 chain.
   \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
         causal-ordering problem CO as a strict restriction of CD
         to receive-event targets; the forward reduction CD
