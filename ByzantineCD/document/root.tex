@@ -1,0 +1,278 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{isabelle,isabellesym}
+
+\providecommand{\nexists}{\not\exists}
+
+\usepackage[top=3cm,bottom=4.5cm]{geometry}
+
+% this should be the last package used
+\usepackage{pdfsetup}
+
+\urlstyle{rm}
+\isabellestyle{tt}
+
+\title{Byzantine-tolerant detection of causality:\\
+       there is no holy grail}
+\author{Mechanisation in Isabelle/HOL of the impossibility results of\\
+        Misra and Kshemkalyani (Parallel Computing 124, 2025)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We mechanise in Isabelle/HOL the impossibility results of
+Misra and Kshemkalyani, \emph{Byzantine-tolerant detection of
+causality: there is no holy grail} (Parallel Computing 124 (2025),
+article 103136).  The causality determination problem
+$\mathrm{CD}(E,F,e_i^*)$ asks an asynchronous distributed algorithm
+to reconstruct the global execution history $E$ at a correct
+process $p_i$, with respect to a target event $e_i^*$, such that
+the happened-before relation evaluated against the algorithm's
+collected $F$ agrees with the truth in $E$.  In the presence of
+even a single Byzantine process this is impossible.
+
+We formalise:
+
+\begin{itemize}
+  \item Theorems 1 and 2 (paper Section 4.1): no algorithm can
+        prevent false negatives in the Byzantine model, and for
+        internal events no algorithm can prevent both false
+        negatives and false positives.  Both proofs are
+        constructive: given any candidate algorithm we exhibit a
+        Byzantine adversary using a fresh natural number as event
+        identifier.
+  \item Theorems 3, 4, 5 (paper Section 4.2): the headline
+        impossibility results for unicast, broadcast, and
+        multicast communication.  The proofs route directly
+        through Theorem 1 (\verb|CD_FN_unavoidable|) -- bypassing
+        the paper's $\mathrm{Consensus} \preceq \mathrm{Black\_Box}
+        \preceq \mathrm{CD} + \mathrm{FLP}$ chain at the
+        critical-path level.  The paper's chain is preserved as a
+        fully-proven alternative derivation
+        (\verb|Reductions.thy| + \verb|BlackBox_Unsolvable.thy| +
+        \verb|FLP_Consensus.thy|), with the FLP impossibility
+        imported from the AFP entry \emph{FLP}
+        (Bisping et al., 2025) as a proven theorem
+        (\verb|flp_consensus_unsolvable|, discharged against
+        \verb|flpPseudoConsensus.ConsensusFails|).
+  \item Theorems 6, 7, 8 (paper Section 4.3): the
+        Byzantine-happened-before extension CD\_B.  T6/T7
+        solvable under unicast/broadcast at three layers (abstract
+        \verb|naive_cd_B_alg| under \verb|correct_reporting|;
+        operational reduction to a structural delivery property;
+        concrete operational construction via an inductive
+        \verb|run_step| with explicit in-flight buffer).  T8
+        impossible under multicast.
+  \item Theorems 9 through 14 (paper Section 4.4 + 4.5):
+        cryptography variants.  Impossibilities (T9, T10, T11)
+        as direct corollaries of T3/T4/T5 -- the Theorem-1 FN
+        attack is crypto-independent.  Possibilities (T12, T13)
+        as direct corollaries of T6/T7.  T14 (the genuinely new
+        content: multicast \verb|+| crypto possible, whereas T8
+        said impossible without crypto) via the naive algorithm
+        under \verb|correct_reporting|.  Cryptography is treated
+        at the same abstraction the paper itself takes when
+        citing Bracha 1987 for BRB.
+  \item Theorems 15 and 16 (paper Section 5.1): in the Byzantine
+        model CD is harder than Consensus, directly from CD
+        unsolvability and the abstract Consensus witness; in the
+        crash-failure model, the asymmetry reverses (Consensus is
+        unsolvable by FLP, CD is solvable via the
+        \verb|cd_alg_with_recv| signature with $F := \mathit{recv}$
+        whenever reports are faithful to the true execution).
+  \item Theorems 17 and 18 (paper Section 5.2): CD and CO are
+        interreducible in the Byzantine model (T17), and CO is
+        subject to FN and FN-or-FP for internal-event witnesses
+        (T18).  CO is mechanised as a strict restriction of CD to
+        receive-event targets; T17 forward direction is
+        constructive (a CD solver is automatically a CO solver),
+        T18 is proven directly via a two-message fresh-id
+        construction, and the reverse direction of T17 is proven
+        under Byzantine premises by routing through the two
+        independently-established impossibility chains.
+\end{itemize}
+
+The development sits on top of the AFP entry \emph{FLP}.  The
+headline impossibility theorems (3, 4, 5) take exactly one mild
+finiteness side hypothesis \verb|fin_cd| --- shape-compatible
+with the \verb|fin_F| of Theorem 1 (\verb|CD_FN_unavoidable|) ---
+and no other meta-level assumptions.  No HOL axioms, no locale
+axioms on the impossibility chain.
+
+A scheduler-level refinement \verb|Causal_Scheduler.thy| proves the
+paper-faithful Byzantine-happened-before version of BCB's
+causal-order delivery property: \verb|causal_run_step| is a strict
+refinement of \verb|run_step| with freshness at send and a
+Byzantine-happened-before predecessor causal precondition at
+receive; \verb|causal_run_satisfies_bhb_causal_order| is what paper
+Definition 3 and Section 4.3 actually call for; and a parallel
+composition into operational T7
+(\verb|fair_drained_causal_run_solves_CD_B_broadcast|) sits
+alongside Primitives.thy's plain-run chain.  Honest scope: this is
+an independent structural guarantee of the schedule rather than the
+discharge of a load-bearing hypothesis -- the existing T7 chain only
+consumes \verb|bru_satisfied| because the recv view
+(\verb|recv_from_history|) ignores per-process receive order.
+
+The proof routes directly through Theorem 1: \verb|CD_solvable|
+extracts a \verb|produces_valid_F| witness, which Theorem 1
+defeats with an admissible Byzantine adversary.  The paper's
+``Consensus $\preceq$ Black\_Box $\preceq$ CD + FLP'' chain is
+preserved as paper-faithful documentation (R1, R2 in
+\verb|Reductions.thy|; the BlackBox impossibility
+\verb|BlackBox_unsolvable| in \verb|BlackBox_Unsolvable.thy|; and
+the FLP impossibility \verb|flp_consensus_unsolvable| in
+\verb|FLP_Consensus.thy|, proven against the AFP entry's
+\verb|ConsensusFails|) but is not on the critical path of the
+headline theorems.
+
+\medskip
+
+\noindent\emph{License:} BSD-3-Clause (matching the AFP \emph{FLP}
+entry).  The source paper is open access under CC-BY 4.0 and
+redistributed in this repository under that license.
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+\section*{Reading order}
+
+The theories are intended to be read in the following order:
+
+\begin{enumerate}
+  \item \verb|ByzantineSystem|: the process partition (correct
+        $\uplus$ Byzantine) and the abstract Consensus signature.
+  \item \verb|Events|: events, per-process and global histories,
+        program order, message order, happened-before relation
+        (paper Definitions 1, 2).
+  \item \verb|CD|: the Causality Determination problem,
+        $\mathit{valid}(F)$, false positives / negatives, the
+        adversary model, the CD-solver signature (paper
+        Definition 5).
+  \item \verb|BlackBox|: the Black\_Box problem of paper Section
+        4.2 with its piecewise broadcast value $w$.
+  \item \verb|Reductions|: the two reductions of paper Section
+        4.2 -- R1 (Consensus $\preceq$ BB) constructive in
+        declarative Isar, R2 (BB $\preceq$ CD) constructive modulo
+        the paper's named meta-level step
+        \verb|cd_can_identify_correct|.
+  \item \verb|Theorems_1_2|: paper Section 4.1, Theorems 1 and 2,
+        with explicit Byzantine adversary constructions using
+        fresh natural numbers.
+  \item \verb|BlackBox_Unsolvable|: a proof of
+        $\lnot$\,\verb|BlackBox_solvable procs correct| by direct
+        reduction to Theorem 1 via the BB-to-CD projection.
+        Discharges what was previously a meta-level hypothesis on
+        Theorems 3/4/5.
+  \item \verb|FLP_Consensus|: the FLP-style consensus predicate
+        with the impossibility proven against the AFP entry's
+        \verb|ConsensusFails|.  Retained as the AFP-FLP citation
+        motivating the paper's chosen chain; not on the
+        impossibility path of this development.
+  \item \verb|Impossibility|: paper Section 4.2, Theorems 3, 4,
+        5 -- the headline results.
+  \item \verb|Foundation_Vacuity|: a regression diagnostic
+        documenting why the abstract \verb|solves_Consensus|
+        predicate is too weak to express FLP, and motivating the
+        FLP-style chain used by \verb|Impossibility|.
+  \item \verb|CD_vs_Consensus|: paper Section 5.1, Theorems 15
+        and 16 (Byzantine: CD harder than Consensus; crash:
+        Consensus half of T16 only).
+  \item \verb|BHB|, \verb|CD_B_Algorithm|, \verb|Delivery|,
+        \verb|Execution_Model|: paper Section 4.3.  The
+        B-happened-before relation; the CD\_B problem; abstract
+        and operational solvability under unicast/broadcast
+        (Theorems 6, 7); impossibility under multicast (Theorem
+        8); inductive execution model with deadlock freedom.
+  \item \verb|Liveness|: real-world fairness on the inductive
+        execution model.  Infinite executions modelled as
+        \verb|nat => 'p config| with a side condition that each
+        adjacent pair satisfies \verb|run_step|; the fairness
+        predicate \verb|fair_run| states that every buffered
+        triple eventually leaves the buffer; the headline
+        theorem \verb|fair_run_delivers| says every correct-to-
+        correct \verb|Send| in a fair infinite run has a matching
+        \verb|Receive| at some later step.
+  \item \verb|Primitives|: Byzantine Reliable Unicast (BRU) and
+        Byzantine Causal Broadcast over Byzantine Reliable
+        Broadcast (BCB-over-BRB) named explicitly at the event
+        level.  \verb|bru_satisfied|, \verb|bcb_causal_order|,
+        and \verb|bcb_over_brb_satisfied| predicates; operational
+        discharge of BRU from the run model; end-to-end
+        composition theorems giving operational T6 / T7 directly
+        from a fair drained run.
+  \item \verb|T6_Concrete|: a fully-concrete worked example of
+        T6.  A two-process scenario with an explicit three-step
+        run (\verb|step_send|, \verb|step_recv|,
+        \verb|step_internal|), composed with the operational T6
+        chain to demonstrate that the existential statement
+        \verb|CD_B_solvable_with_recv Unicast correct| is non-
+        vacuously satisfiable -- there is an actual adversary,
+        an actual run, and an actual algorithm output that
+        witness it.
+  \item \verb|T6_Multihop|: a three-process two-hop variant of
+        the T6 demo.  Five \verb|run_step| transitions cover a
+        bhb chain crossing three processes ($p_b$ sends to $p_a$,
+        $p_a$ relays to $p_c$, $p_c$'s target internal event);
+        \verb|multi_bhb_chain| proves the four-edge bhb path,
+        \verb|T6_multihop_demo| and \verb|T6_multihop_witnessed|
+        mirror the 1-message demo at the bigger scale.
+  \item \verb|T6_With_Byzantine|: a T6 demo with a Byzantine
+        bystander.  Two correct processes plus a Byzantine $p_c$
+        performing an arbitrary local internal event (exercises
+        \verb|step_byzantine|, unused in the other demos);
+        \verb|byzantine_event_not_on_bhb_chain_*| proves the
+        Byzantine's event is excluded from every bhb chain by
+        \verb|bhb_proc_of_endpoints|; \verb|T6_with_byzantine_demo|
+        and \verb|T6_with_byzantine_witnessed| demonstrate T6's
+        robustness to live Byzantine activity.
+  \item \verb|Causal_Scheduler|: paper-faithful BCB causal-order
+        theorem at the scheduler level (paper Section 4.3,
+        Definition 3).  Adds two side conditions to
+        \verb|run_step|: freshness at \verb|step_send|
+        (correct-to-correct triples are sent at most once) and a
+        Byzantine-happened-before predecessor causal precondition
+        at \verb|step_recv|.  Proves a joint invariant (send and
+        receive uniqueness, buffer count, delivered-drained,
+        receive-implies-send), the Byzantine-happened-before
+        version of BCB causal-order
+        (\verb|causal_run_satisfies_bhb_causal_order|), and a
+        parallel composition into operational T7
+        (\verb|fair_drained_causal_run_solves_CD_B_broadcast|).
+        Honest scope: this is an independent structural guarantee
+        of the schedule rather than the discharge of a load-bearing
+        hypothesis -- the existing T7 chain only consumes
+        \verb|bru_satisfied| because the recv view
+        (\verb|recv_from_history|) ignores per-process receive order.
+  \item \verb|CO|: paper Section 5.2, Theorems 17 and 18.  The
+        causal-ordering problem CO as a strict restriction of CD
+        to receive-event targets; the forward reduction CD
+        $\implies$ CO; T18 false-negative and false-negative-or-
+        false-positive constructions; the impossibility of CO
+        under all three communication modes; the interreducibility
+        statement under Byzantine premises.
+  \item \verb|CD_with_Crypto|: paper Section 4.4 + 4.5, Theorems
+        9 through 14.  The six cryptography theorems, all as
+        corollaries of the corresponding non-crypto results plus
+        T14 as the new multicast-with-crypto-possibility case.
+\end{enumerate}
+
+\newpage
+
+% include generated text of all theories
+\input{session}
+
+\nocite{*}
+\bibliographystyle{abbrv}
+\bibliography{root}
+
+\end{document}
