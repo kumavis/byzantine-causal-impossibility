@@ -64,9 +64,13 @@ submitter would still need to do.
    - **Depends on:** AFP entry `FLP`.
 
 3. **Open hypotheses to disclose in the abstract**:
-   The headline impossibility theorems (3, 4, 5) take exactly one
-   mild finiteness side hypothesis:
-     - `fin_cd` (side hypothesis on Theorems 3/4/5 in
+   The headline impossibility theorems (3, 4, 5) take three side
+   hypotheses, all standard and openly stated:
+     - `byzantine ≠ {}` (`byz_ne`): at least one Byzantine process
+       exists.  Without it the impossibility is vacuous.
+     - `correct ≠ {}` (`cor_ne`): at least one correct process
+       exists.  Needed to instantiate the target of the FN attack.
+     - `fin_cd` (finiteness side hypothesis on Theorems 3/4/5 in
        `Impossibility.thy`): any candidate CD-solver `cd_alg` that
        produces a valid `F` has finite `events_of` output at the
        Theorem 1 adversary's local target event of the form

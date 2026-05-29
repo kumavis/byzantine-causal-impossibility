@@ -26,7 +26,7 @@ quotes and divergence notes, see [`PROOFS.md`](PROOFS.md).
 | 4.5 | T14 | CD_B possible, multicast + crypto | ✅ proven (new) | `CD_with_Crypto.T14_CD_B_solvable_multicast_with_crypto` |
 | 5.1 | T15 | CD harder than Consensus (Byzantine) | ✅ proven | `CD_vs_Consensus.CD_harder_than_Consensus` |
 | 5.1 | T16 | Consensus harder than CD (crash) | ✅ proven | `CD_vs_Consensus.T16_full`, `T16_Consensus_unsolvable_part`, `T16_CD_solvable_under_crash_part` |
-| 5.2 | T17 | CO ↔ CD interreducible (Byzantine) | ✅ proven | `CO.CD_solvable_imp_CO_solvable` + `CO.T17_CO_interreducible_with_CD` |
+| 5.2 | T17 | CO ↔ CD interreducible (Byzantine) | ✅ proven (forward direction constructive; reverse direction via mutual vacuity under Byzantine premises — see PROOFS.md) | `CO.CD_solvable_imp_CO_solvable` + `CO.T17_CO_interreducible_with_CD` |
 | 5.2 | T18 | CO subject to FN/FP | ✅ proven | `CO.CO_FN_unavoidable`, `CO.CO_FN_or_FP_unavoidable_internal` |
 
 **Scoreboard**: 18/18 fully proven.
@@ -45,22 +45,34 @@ a multihop T6 demo (`T6_Multihop.T6_multihop_demo`,
 correct processes, a Byzantine-bystander T6 demo
 (`T6_With_Byzantine.T6_with_byzantine_demo`,
 `byzantine_event_not_on_bhb_chain_*`) showing T6's robustness
-to live Byzantine activity via `step_byzantine`, and a
-scheduler-level operational realisation of BCB's causal-order
-delivery (`Causal_Scheduler.causal_run_satisfies_bhb_causal_order`,
-`fair_drained_causal_run_solves_CD_B_broadcast`) that closes the
-last operational hypothesis on T7's chain.
+to live Byzantine activity via `step_byzantine`, and an
+independent, paper-faithful BCB causal-order theorem at the
+scheduler level (`Causal_Scheduler.causal_run_satisfies_bhb_causal_order`,
+`fair_drained_causal_run_solves_CD_B_broadcast`) — the
+Byzantine-happened-before version of BCB delivery (paper
+Definition 3), realised by a strict refinement of `run_step`.
+At the abstraction the development chooses for the recv view
+(`recv_from_history` ignores per-q receive order), causal-order
+delivery is not load-bearing on the existing T7 chain; the
+scheduler theorem is an independent structural guarantee rather
+than the discharge of an active gap.
 
 ## Side hypotheses still on the critical path
 
-The mechanisation introduces exactly *one* mild side hypothesis on
-the headline theorems (3/4/5):
+The mechanisation's headline theorems (3/4/5) take three side
+hypotheses:
 
-- `fin_cd`: every candidate CD-solver `cd_alg` that produces a valid
-  `F` has finite `events_of` output at the Theorem-1 adversary's
-  local target event.  Trivially satisfied by any algorithm whose
-  output is supported on the finite process set.  Identical in shape
-  to Theorem 1's `fin_F`.
+- `byzantine ≠ {}` (`byz_ne`) — at least one Byzantine process
+  exists; without it the impossibility is vacuous (the adversary
+  needs a Byzantine to control).
+- `correct ≠ {}` (`cor_ne`) — at least one correct process exists;
+  needed to instantiate the target of the FN attack.  The paper does
+  not state this explicitly but FLP needs it too.
+- `fin_cd` — every candidate CD-solver `cd_alg` that produces a
+  valid `F` has finite `events_of` output at the Theorem-1
+  adversary's local target event.  Trivially satisfied by any
+  algorithm whose output is supported on the finite process set.
+  Identical in shape to Theorem 1's `fin_F`.
 
 No HOL axioms.  No locale axioms on the critical path.  (R2's
 `cd_can_identify_correct` exists in `Reductions.thy` but is
@@ -93,16 +105,31 @@ arguments (T9–T11).  A deeper mechanisation would add:
   Bracha's BRB), which currently lives in the prose of
   `CD_with_Crypto.thy` but is not formalised.
 
-### 2. ~~Scheduler-level realisation of BCB causal order~~ (now done)
+### 2. Scheduler-level realisation of BCB causal order (statement done; recv view still ignores order)
 
-`Causal_Scheduler.thy` discharges this follow-on: it introduces
-`causal_run_step` as a refinement of `run_step` with two added
-side conditions -- freshness at `step_send` and a BHB-predecessor
-causal precondition at `step_recv` -- and proves
-(`causal_run_satisfies_bhb_causal_order`) that any reachable
-configuration satisfies the Byzantine-happened-before version of
-BCB's causal-order property (paper Definition 3 + Section 4.3),
-which is the paper-faithful form of BCB.  Composing with the
-existing `T7_broadcast_via_bcb_over_brb` gives a fully discharged
-operational T7 (`fair_drained_causal_run_solves_CD_B_broadcast`)
-where no operational hypothesis is left to the user.
+`Causal_Scheduler.thy` introduces `causal_run_step` as a strict
+refinement of `run_step` with freshness at `step_send` and a
+Byzantine-happened-before predecessor causal precondition at
+`step_recv`, and proves (`causal_run_satisfies_bhb_causal_order`)
+that every reachable configuration satisfies the
+Byzantine-happened-before version of BCB's causal-order property
+(paper Definition 3 + Section 4.3) — the paper-faithful form of
+BCB delivery.
+
+Honest scoping.  The scheduler theorem is an **independent
+structural guarantee** of the schedule, not a discharge of an
+active gap.  Primitives.thy's
+`fair_drained_run_solves_CD_B_broadcast` already takes
+`bcb_causal_order` as a hypothesis, but the chain it routes
+through (`bcb_over_brb_realises_mode_admissible_broadcast`)
+discards the causal-order half and consumes only `bru_satisfied`,
+because the recv view (`recv_from_history p H q = H q`,
+`Delivery.thy`) ignores per-q receive order.  At that abstraction,
+causal-order delivery cannot have material content.
+
+The actually-remaining follow-on, then, is to **refine the recv
+view itself** so that the order of receives at correct `q`
+becomes load-bearing — for example, by reading the per-process
+receive subsequence of `H q` rather than the full local
+history.  At that refined abstraction the BHB causal-order
+theorem we now have would become the operational discharge.

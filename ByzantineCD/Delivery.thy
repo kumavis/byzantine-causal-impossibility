@@ -87,7 +87,18 @@ This is the abstract content of ``at \<open>p_i\<close>, the algorithm reads
 each \<open>F_q\<close> from what it has been told''.  Operationally, \<open>p_i\<close>
 would derive this view by collecting messages it has received from
 or about \<open>q\<close>; at this abstraction level we identify the view with
-the history's @{term q} component directly.\<close>
+the history's @{term q} component directly.
+
+The @{term p} parameter (the receiver) is currently ignored:
+\<open>recv_from_history\<close> returns the full local history at
+@{term q} regardless of which @{term p} is asking.  This is a
+deliberate abstraction choice -- it cleanly separates the
+``what the algorithm sees'' question from the operational
+``how it sees it'' question, but it means per-process recv
+order cannot have material content at this layer.  A refinement
+that reads the receive subsequence at @{term p} from @{term \<open>H q\<close>}
+would make per-process order load-bearing; the @{term p}
+parameter is kept in the signature for that future refinement.\<close>
 
 definition recv_from_history ::
   "'p \<Rightarrow> 'p history \<Rightarrow> ('p \<Rightarrow> 'p history_local)" where

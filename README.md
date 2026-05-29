@@ -134,8 +134,8 @@ Fully proven:
   solves CD_B at the correct target — concrete demonstration of
   T6's Byzantine-robustness.
 - **Causal scheduler refinement** (`Causal_Scheduler.thy`):
-  scheduler-level operational realisation of BCB's
-  causal-order delivery (paper §4.3).  Refines `run_step` to
+  paper-faithful BCB causal-order theorem at the scheduler level
+  (paper §4.3, Definition 3).  Refines `run_step` to
   `causal_run_step` by adding (a) freshness at `step_send` and
   (b) a BHB-predecessor causal precondition at `step_recv`.
   Proves uniqueness of correct-to-correct sends/receives
@@ -144,10 +144,17 @@ Fully proven:
   theorem `causal_run_satisfies_bhb_causal_order`: at any
   reachable configuration, every BHB-ordered pair of
   correct-to-correct sends to the same correct receiver has
-  BHB-ordered matching receives.  End-to-end
-  `fair_drained_causal_run_solves_CD_B_broadcast` closes the
-  operational T7 chain — no operational hypothesis is left to
-  the user.
+  BHB-ordered matching receives.  *Honest scope:* this is an
+  independent structural guarantee of the schedule, **not** a
+  discharge of a load-bearing operational hypothesis.  The
+  existing T7 chain in `Primitives.thy` already routes through
+  `T7_broadcast_via_bcb_over_brb`, which only consumes
+  `mode_admissible Broadcast`; the recv view
+  (`recv_from_history p H q = H q`) ignores per-q receive order,
+  so causal-order delivery cannot have material content at this
+  abstraction.  `fair_drained_causal_run_solves_CD_B_broadcast`
+  is a parallel composition over the `causal_run` model rather
+  than a discharge of a missing hypothesis.
 - **Theorems 9–14** (paper §4.4 + §4.5, `CD_with_Crypto.thy`):
   CD impossibility under unicast / broadcast / multicast even
   with cryptography (T9, T10, T11) — direct corollaries of
@@ -180,14 +187,17 @@ Out of scope (paper-adjacent, would deepen the mechanisation):
   collision-resistant hashes, and recursive hash histories would
   let us state the paper's quantitative FP-prevention qualifier
   (FP prevented for `t < n/3` under Bracha's BRB).
-- ~~**Operational realisation of BCB causal order.**~~ *(done in
-  `Causal_Scheduler.thy`.)*  The scheduler-level refinement
-  `causal_run_step` and the BHB-version BCB theorem
-  `causal_run_satisfies_bhb_causal_order` discharge this
-  operationally.  `Primitives.thy`'s `bcb_causal_order` (which uses
-  plain `hb`) is retained as a parallel statement; the BHB-version
-  is what the paper's Definition 3 actually talks about and is what
-  the scheduler refinement realises.
+- **Operational realisation of BCB causal order.**
+  `Causal_Scheduler.thy` proves the BHB-version BCB causal-order
+  theorem at the scheduler level, but at the development's
+  current recv-view abstraction (`recv_from_history` ignores per-q
+  receive order) causal-order delivery is not load-bearing on the
+  T7 chain.  The actually-remaining follow-on is to refine the
+  recv view itself so the order of receives at correct `q`
+  becomes load-bearing — for example, by reading the per-process
+  receive subsequence rather than the full local history.  At
+  that refined abstraction the BHB causal-order theorem we now
+  have becomes the operational discharge.
 
 ## File structure
 

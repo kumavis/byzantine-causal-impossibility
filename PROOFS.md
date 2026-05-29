@@ -718,12 +718,24 @@ discharge is therefore in terms of `bhb`, in
   rule-specific data exposed by a case analysis on the
   `causal_run_step` rule.
 
-**Composition.**  `fair_drained_causal_run_solves_CD_B_broadcast`
-chains the operational T7 (`T7_broadcast_via_bcb_over_brb`)
-through the causal-run model.  The unicast counterpart
-(`fair_drained_causal_run_solves_CD_B_unicast`) reuses the
-same chain; unicast does not require BCB at all (`bru_satisfied`
-suffices), but the unified entry point is convenient.
+**Composition (with honest scope).**
+`fair_drained_causal_run_solves_CD_B_broadcast` chains
+`T7_broadcast_via_bcb_over_brb` through the causal-run model,
+parallel to `fair_drained_run_solves_CD_B_broadcast` in
+`Primitives.thy`.  Both bottom out at
+`T7_broadcast_via_bcb_over_brb`, which only needs
+`mode_admissible Broadcast` (= `wf_history` + `bru_satisfied`).
+The `bcb_causal_order` / `bhb_causal_order` hypothesis is
+threaded for paper-faithfulness but is **not** materially
+consumed downstream: the recv view (`recv_from_history p H q
+= H q`, `Delivery.thy`) ignores per-q receive order, so causal-
+order delivery cannot have material content at this abstraction.
+
+This means `causal_run_satisfies_bhb_causal_order` is an
+**independent structural guarantee** of the schedule, not a
+discharge of an active operational gap.  Promoting it to a
+genuine discharge requires refining the recv view so per-q
+receive order becomes load-bearing — see ROADMAP.md §2.
 
 The matching `bcb_causal_order` predicate in `Primitives.thy`
 (which uses plain `hb`) is retained as a parallel statement;

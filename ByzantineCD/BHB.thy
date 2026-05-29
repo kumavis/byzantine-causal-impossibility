@@ -38,31 +38,22 @@
     - The Byzantine happened-before relation \<rightarrow>_B (bhb below), with
       its boolean evaluation form bhb_eval.
 
-    - valid_B (paper, Definition 6's correctness criterion), false
-      negative/positive variants under \<rightarrow>_B (FN_B, FP_B), and the
-      derived produces_valid_F_B, CD_B_solvable signatures analogous
-      to the CD ones in CD.thy.
+    - valid_B (paper, Definition 6's correctness criterion) and the
+      false negative/positive variants under \<rightarrow>_B (FN_B, FP_B).
 
     - A small library of structural lemmas (bhb is a sub-relation of
-      hb against the same history, etc.) that downstream developments
-      of Theorems 6-8 will need.
+      hb against the same history, etc.) used downstream.
 
-  We do not prove Theorems 6, 7, 8.  Theorems 6 and 7 require
-  modelling explicit messages and a communication primitive (BRU,
-  BCB/BRB) so that the algorithm can collect E by receiving messages;
-  our abstract 'p cd_solver signature
-  ('p \<Rightarrow> 'p event \<Rightarrow> 'p history \<times> bool) sees only the query indices
-  (i, e_star).  Theorem 8 requires reasoning about the unachievability
-  of BRM, which is itself an operational primitive.  Adding such a
-  communication model -- analogous to the AFP entry's
-  asynchronousSystem locale -- is a substantial follow-on rather than
-  a small corollary of the existing development.  These theorems are
-  in the same out-of-scope band as the CD-solvable-under-crash half
-  of Theorem 16 (see CD_vs_Consensus.thy).
+  Theorems 6, 7, 8 are proven in CD_B_Algorithm.thy on top of this
+  foundation; the algorithm signature used there is the richer
+  cd_alg_with_recv from CD_B_Algorithm.thy (which takes a per-peer
+  reported history as input), not the bare cd_solver type below.
 
-  The definitions below are intentionally aligned with the paper's
-  Definitions 3 and 6 so that a future development can drop into
-  this foundation and prove the algorithm-side results directly.
+  The bare produces_valid_F_B / CD_B_solvable predicates near the
+  end of this file are retained as the paper-faithful definitional
+  surface that mirrors Definition 6 against the bare cd_solver
+  type; the downstream development uses the cd_alg_with_recv
+  versions exclusively.
 *)
 
 theory BHB
@@ -243,38 +234,24 @@ definition produces_valid_F_B ::
 definition CD_B_solvable :: "comm_mode \<Rightarrow> 'p set \<Rightarrow> bool" where
   "CD_B_solvable m C \<longleftrightarrow> (\<exists>alg. produces_valid_F_B C alg)"
 
-section \<open>Out-of-scope: paper Section 4.3's Theorems 6, 7, 8\<close>
+section \<open>Forward pointer: Theorems 6, 7, 8 are proven downstream\<close>
 
-text \<open>The three results of paper Section 4.3 -- T6 (unicast,
-solvable), T7 (broadcast, solvable), T8 (multicast, unsolvable) --
-are deliberately not proved in this development.  All three depend
-on a communication-level model the development does not provide:
+text \<open>Paper Section 4.3's Theorems 6 (unicast, solvable), 7
+(broadcast, solvable), and 8 (multicast, unsolvable) are proven in
+@{theory_text \<open>CD_B_Algorithm.thy\<close>} on top of this foundation.
+They use a richer algorithm signature, @{text cd_alg_with_recv}, that
+takes a per-peer reported history as input (where the bare
+@{type cd_solver} type used in @{const produces_valid_F_B} above sees
+only the query indices); the operational layer is in
+@{theory_text \<open>Delivery.thy\<close>} (structural delivery property) and
+@{theory_text \<open>Execution_Model.thy\<close>} (inductive \<open>run_step\<close>
+with explicit in-flight buffer).
 
-\begin{itemize}
-  \item T6 and T7 are positive results.  Their proofs construct
-    explicit algorithms that use, respectively, Byzantine Reliable
-    Unicast and Byzantine Reliable / Causal Broadcast to collect
-    the execution history $E$ at $p_i$.  Our abstract @{type cd_solver}
-    signature, @{typ "'p \<Rightarrow> 'p event \<Rightarrow> 'p history \<times> bool"}, sees
-    only the query indices $(i, e_\star)$ and has no input channel
-    by which it could receive messages; modelling messages requires
-    an extension along the lines of the AFP entry's
-    asynchronousSystem locale.
-
-  \item T8 is an impossibility that depends on the operational
-    fact that Byzantine Reliable Multicast cannot be achieved
-    without identifying Byzantine processes within the multicast
-    group.  Capturing that argument requires modelling multicast
-    groups, the BRM primitive, and its operational requirements --
-    again a communication-level extension.
-\end{itemize}
-
-These three theorems are in the same out-of-scope band as the
-``CD is solvable under crash failures'' half of Theorem 16 (see
-@{theory_text \<open>CD_vs_Consensus.thy\<close>}).  The definitions above are
-the foundation a future development would build on; the structural
-lemmas (\<open>bhb_imp_hb\<close> et cetera) factor the obvious connections
-between @{const bhb} and @{const hb} so they don't have to be
-re-derived.\<close>
+The bare @{const produces_valid_F_B} and @{const CD_B_solvable}
+definitions above mirror paper Definition 6 against the original
+@{type cd_solver} type and are retained as paper-faithful
+definitional surface; the downstream development uses the
+@{text cd_alg_with_recv} versions in @{theory_text \<open>CD_B_Algorithm.thy\<close>}
+exclusively.\<close>
 
 end

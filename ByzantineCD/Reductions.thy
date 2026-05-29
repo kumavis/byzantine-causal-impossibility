@@ -606,6 +606,23 @@ proof -
     using blackbox_reduces_to_cd by (auto simp: BlackBox_solvable_def)
 qed
 
+text \<open>The alternative-derivation corollary.  Composing R2
+(@{thm blackbox_reduces_to_cd} / @{thm CD_solvable_imp_BlackBox_solvable})
+with the proven BlackBox impossibility
+(@{theory_text \<open>BlackBox_Unsolvable.thy\<close>}, theorem
+@{text BlackBox_unsolvable}) yields @{text \<open>\<not> CD_solvable m correct\<close>}
+without going through Theorem 1 directly.  This is the paper's
+``$\preceq$-route'' alternative to the headline-impossibility
+proofs of @{theory_text \<open>Impossibility.thy\<close>}, which take the
+direct route via Theorem 1.  The alternative route requires the
+locale axiom @{thm cd_can_identify_correct} (R2's meta-level
+step), which the direct route does not.\<close>
+
+corollary CD_unsolvable_via_BlackBox:
+  assumes bb_unsolv: "\<not> BlackBox_solvable procs correct"
+  shows   "\<not> CD_solvable m correct"
+  using bb_unsolv CD_solvable_imp_BlackBox_solvable by blast
+
 end \<comment> \<open>context @{locale byzantineSystem_with_identification}\<close>
 
 end

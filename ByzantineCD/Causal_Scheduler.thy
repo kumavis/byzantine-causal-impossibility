@@ -3,23 +3,46 @@
   Author:  Formalization of Misra & Kshemkalyani, "Byzantine-tolerant
            detection of causality" (Parallel Computing 124, 2025).
 
-  Scheduler-level refinement of @{const run_step} that operationally
-  realises BCB's causal-order delivery primitive (paper Section 4.3).
+  An independently-proven, paper-faithful BCB causal-order theorem
+  at the scheduler level (paper Section 4.3, Definition 3).
 
   --------------------------------------------------------------------
-  Setting.  @{theory_text \<open>Primitives.thy\<close>} threads
-  @{const bcb_causal_order} through the operational T7 chain as an
-  unproved hypothesis: at the abstraction layer of the bare
-  @{const run_step} relation, the scheduler does not constrain the
-  order in which correct receivers consume in-flight messages, so
-  BCB's causal-delivery property is not automatically discharged.
-  Operationally, BCB is implemented by a layer above BRB that defers
-  delivery of a message until every causally-preceding send to the
-  same receiver has been delivered.
+  Scope and honest framing.  @{theory_text \<open>Primitives.thy\<close>}'s
+  @{thm fair_drained_run_solves_CD_B_broadcast} takes
+  @{const bcb_causal_order} as a hypothesis, but the chain wired
+  through @{thm bcb_over_brb_realises_mode_admissible_broadcast}
+  discards the causal-order half and consumes only
+  @{const bru_satisfied}.  At the abstraction the development
+  chooses for the recv view (@{const recv_from_history} ignores
+  per-process receive order), causal-order delivery cannot have
+  material content on the chain.
 
-  This theory mechanises that scheduling layer as a refinement of
-  @{const run_step}.  We define @{const causal_run_step} by adding
-  two side conditions to @{const run_step}:
+  So this theory is \<^emph>\<open>not\<close> closing a load-bearing operational
+  hypothesis: both
+  @{thm fair_drained_run_solves_CD_B_broadcast} (Primitives.thy)
+  and our @{const fair_drained_causal_run_solves_CD_B_broadcast}
+  bottom out at @{const T7_broadcast_via_bcb_over_brb}, which only
+  asks for @{const mode_admissible} \<open>Broadcast\<close>.  What this theory
+  contributes instead:
+
+  (1) An independent, paper-faithful statement of BCB causal-order
+      delivery at the Byzantine-happened-before layer
+      (paper Definition 3), realised by a strict scheduler-level
+      refinement of @{const run_step}.
+
+  (2) A demonstration that the refinement is consistent: it embeds
+      into @{const run_step} (so inherits all run invariants), and
+      at every reachable configuration the BHB causal-order
+      property holds.
+
+  In a future development where the recv view is built from per-q
+  receive sequences (so the order of receives at @{term q} becomes
+  load-bearing), this theory would provide the operational
+  discharge.
+
+  --------------------------------------------------------------------
+  Refinement.  @{const causal_run_step} adds two side conditions to
+  @{const run_step}:
 
     (a) freshness at @{const run_step.step_send}: a correct sender's
         triple @{term \<open>(p, q, m)\<close>} is fresh, i.e., no Send event with
@@ -42,12 +65,23 @@
      and so on).
   -- Uniqueness of correct-to-correct sends and receives along any
      @{const causal_run}.
-  -- The Byzantine-happened-before BCB causal-order property -- the
-     paper-faithful version of @{const bcb_causal_order} that uses
-     paper Definition 3's @{const bhb} rather than plain
-     @{const hb} -- holds at any drained configuration reachable via
-     @{const causal_run}.  This is the operational discharge of BCB
-     that @{theory_text \<open>Primitives.thy\<close>} threads as a hypothesis.
+  -- The Byzantine-happened-before BCB causal-order property
+     (@{term bhb_causal_order}, paper Definition 3 + Section 4.3)
+     holds at every reachable @{const causal_run} configuration.
+     This is the BHB version of @{const bcb_causal_order} from
+     Primitives.thy (which uses plain @{const hb}); it is what the
+     paper's text actually calls for, since Byzantine processes can
+     fabricate hb chains through themselves that no correct-process
+     scheduler can constrain.
+  -- A drained @{const causal_run} satisfies
+     @{const bhb_over_brb_satisfied} (BRU + BHB causal-order).
+  -- End-to-end composition into operational T7 over the
+     @{const causal_run} model
+     (@{const fair_drained_causal_run_solves_CD_B_broadcast}),
+     parallel to the plain-@{const run} chain in Primitives.thy.
+     The same caveat applies: the broadcast chain's recv view
+     ignores per-q receive order, so this composition does not
+     materially use the BHB causal-order theorem.
 
   --------------------------------------------------------------------
   Why @{const bhb} rather than @{const hb}.  Byzantine processes can
@@ -57,8 +91,9 @@
   correct-process scheduler can constrain.  Paper Definition 3
   restricts hb to chains through correct processes precisely to
   sidestep this, and Section 4.3's BCB is stated in terms of the
-  Byzantine happened-before relation.  Our operational discharge is
-  therefore in terms of @{const bhb} and matches the paper.
+  Byzantine happened-before relation.  Our statement of BCB
+  causal-order is therefore in terms of @{const bhb}, and matches
+  the paper.
 *)
 
 theory Causal_Scheduler
@@ -1518,6 +1553,64 @@ proof -
   show ?thesis using p_eq ev_eq by simp
 qed
 
+text \<open>The recv-rule inversion helper.  Given a @{const causal_run_step}
+whose @{const hist_extend} witness is a @{const Receive} at a correct
+process, the step must have come from the \<open>causal_step_recv\<close>
+rule with matching parameters.  This packages the four-case analysis
+on the rule (used in \<open>recv_causal_step\<close> and \<open>recv_order_step\<close>
+below) into a single lemma.\<close>
+
+lemma causal_step_recv_inversion:
+  assumes step: "causal_run_step cfg cfg'"
+      and ext: "hist_extend p_new ev (cfg_hist cfg) (cfg_hist cfg')"
+      and is_recv: "ev = Receive q n p m"
+      and qc: "q \<in> correct"
+  shows "p \<in> correct \<and> (p, q, m) \<in># cfg_inflight cfg \<and>
+         causal_recv_ok cfg q p m \<and>
+         n = Suc (length (cfg_hist cfg q)) \<and>
+         p_new = q"
+  using step
+proof (cases rule: causal_run_step.cases)
+  case (causal_step_internal p0 n0)
+  have ext_int: "hist_extend p0 (Internal p0 n0)
+                  (cfg_hist cfg) (cfg_hist cfg')"
+    unfolding hist_extend_def using causal_step_internal by simp
+  from hist_extend_unique[OF ext ext_int] is_recv
+  show ?thesis by simp
+next
+  case (causal_step_send p1 q1 n1 m1)
+  have ext_send: "hist_extend p1 (Send p1 n1 q1 m1)
+                    (cfg_hist cfg) (cfg_hist cfg')"
+    unfolding hist_extend_def using causal_step_send by simp
+  from hist_extend_unique[OF ext ext_send] is_recv
+  show ?thesis by simp
+next
+  case (causal_step_recv q0 p0 m0 n0)
+  have ext_recv: "hist_extend q0 (Receive q0 n0 p0 m0)
+                    (cfg_hist cfg) (cfg_hist cfg')"
+    unfolding hist_extend_def using causal_step_recv by simp
+  from hist_extend_unique[OF ext ext_recv]
+  have pn_eq: "p_new = q0" and ev_eq: "ev = Receive q0 n0 p0 m0" by auto
+  have q_match: "q = q0" and n_match: "n = n0"
+    and p_match: "p = p0" and m_match: "m = m0"
+    using ev_eq is_recv by auto
+  show ?thesis
+    using causal_step_recv pn_eq q_match n_match p_match m_match by simp
+next
+  case (causal_step_byzantine pb new_event)
+  have ext_byz: "hist_extend pb new_event
+                    (cfg_hist cfg) (cfg_hist cfg')"
+    unfolding hist_extend_def using causal_step_byzantine by simp
+  from hist_extend_unique[OF ext ext_byz]
+  have ev_eq: "ev = new_event" by simp
+  have proc_new: "proc_of new_event = pb"
+    using causal_step_byzantine by simp
+  have proc_ev: "proc_of ev = q" using is_recv by simp
+  have q_eq_pb: "q = pb" using ev_eq proc_new proc_ev by simp
+  have pby: "pb \<in> byzantine" using causal_step_byzantine by simp
+  with qc q_eq_pb partition_disj show ?thesis by blast
+qed
+
 subsection \<open>Inductive invariants: @{text recv_causal_inv} and
 @{text recv_order_inv}\<close>
 
@@ -1763,59 +1856,15 @@ proof -
         \<comment> \<open>We need to invert @{thm step} to be a \<open>causal_step_recv\<close>
             with the matching triple, and pull out the @{const causal_recv_ok}
             premise.\<close>
-        from step ev_is_recv ext
-        have "\<exists>ns0. Send p ns0 q m \<in> events_of (cfg_hist cfg) \<and>
+        from causal_step_recv_inversion[OF step ext ev_is_recv qc]
+        have ok: "causal_recv_ok cfg q p m" by simp
+        hence "\<exists>ns0. Send p ns0 q m \<in> events_of (cfg_hist cfg) \<and>
               (\<forall>p'' ns'' m''. p'' \<in> correct \<longrightarrow>
                  Send p'' ns'' q m'' \<in> events_of (cfg_hist cfg) \<longrightarrow>
                  bhb correct (cfg_hist cfg)
                      (Send p'' ns'' q m'') (Send p ns0 q m) \<longrightarrow>
                  (\<exists>nr. Receive q nr p'' m'' \<in> events_of (cfg_hist cfg)))"
-        proof (cases rule: causal_run_step.cases)
-          case (causal_step_internal p0 n0)
-          have ext_int: "hist_extend p0 (Internal p0 n0)
-                          (cfg_hist cfg) (cfg_hist cfg')"
-            unfolding hist_extend_def using causal_step_internal by simp
-          from hist_extend_unique[OF ext ext_int] ev_is_recv
-          have False by simp
-          thus ?thesis by simp
-        next
-          case (causal_step_send p1 q1 n1 m1)
-          have ext_send: "hist_extend p1 (Send p1 n1 q1 m1)
-                            (cfg_hist cfg) (cfg_hist cfg')"
-            unfolding hist_extend_def using causal_step_send by simp
-          from hist_extend_unique[OF ext ext_send] ev_is_recv
-          have False by simp
-          thus ?thesis by simp
-        next
-          case (causal_step_recv q0 p0 m0 n0)
-          have ext_recv: "hist_extend q0 (Receive q0 n0 p0 m0)
-                            (cfg_hist cfg) (cfg_hist cfg')"
-            unfolding hist_extend_def using causal_step_recv by simp
-          from hist_extend_unique[OF ext ext_recv]
-          have pn_eq: "p_new = q0" and ev_eq: "ev = Receive q0 n0 p0 m0" by auto
-          have q_match: "q = q0" and p_match: "p = p0" and m_match: "m = m0"
-            using ev_eq ev_is_recv by auto
-          have ok: "causal_recv_ok cfg q0 p0 m0"
-            using causal_step_recv by simp
-          from ok q_match p_match m_match
-          show ?thesis unfolding causal_recv_ok_def by auto
-        next
-          case (causal_step_byzantine pb new_event)
-          have ext_byz: "hist_extend pb new_event
-                            (cfg_hist cfg) (cfg_hist cfg')"
-            unfolding hist_extend_def using causal_step_byzantine by simp
-          from hist_extend_unique[OF ext ext_byz]
-          have ev_eq: "ev = new_event" by simp
-          have proc_new: "proc_of new_event = pb"
-            using causal_step_byzantine by simp
-          have proc_ev: "proc_of ev = q"
-            using ev_is_recv by simp
-          have q_eq_pb: "q = pb"
-            using ev_eq proc_new proc_ev by simp
-          have pby: "pb \<in> byzantine" using causal_step_byzantine by simp
-          have "q \<in> byzantine" using q_eq_pb pby by simp
-          with qc partition_disj show ?thesis by blast
-        qed
+          unfolding causal_recv_ok_def by simp
         then obtain ns0 where
           send_pns0: "Send p ns0 q m \<in> events_of (cfg_hist cfg)" and
           univ: "\<forall>p'' ns'' m''. p'' \<in> correct \<longrightarrow>
@@ -1970,51 +2019,12 @@ proof -
               number.\<close>
           have nr1_le: "nr1 \<le> length (cfg_hist cfg q)"
             by (rule recv_seq_bounded[OF wf qc r1_in_cfg])
-          \<comment> \<open>Inversion: from @{text step} with the Receive equation,
-              extract @{term \<open>nr2 = Suc (length (cfg_hist cfg q))\<close>}.\<close>
-          from step ev_is_r2 ext
+          \<comment> \<open>Inversion via @{thm causal_step_recv_inversion}: the
+              recv-rule sets @{term nr2} to the next sequence number
+              at @{term q}.\<close>
           have nr2_eq: "nr2 = Suc (length (cfg_hist cfg q))"
-          proof (cases rule: causal_run_step.cases)
-            case (causal_step_internal p0 n0)
-            have ext_int: "hist_extend p0 (Internal p0 n0)
-                            (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_internal by simp
-            from hist_extend_unique[OF ext ext_int] ev_is_r2
-            show ?thesis by simp
-          next
-            case (causal_step_send p1 q1 n1 m1)
-            have ext_send: "hist_extend p1 (Send p1 n1 q1 m1)
-                              (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_send by simp
-            from hist_extend_unique[OF ext ext_send] ev_is_r2
-            show ?thesis by simp
-          next
-            case (causal_step_recv q0 p0 m0 n0)
-            have ext_recv: "hist_extend q0 (Receive q0 n0 p0 m0)
-                              (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_recv by simp
-            from hist_extend_unique[OF ext ext_recv]
-            have ev_eq: "ev = Receive q0 n0 p0 m0" by simp
-            have q_match: "q = q0" and n_match: "nr2 = n0"
-              using ev_eq ev_is_r2 by auto
-            have "n0 = Suc (length (cfg_hist cfg q0))"
-              using causal_step_recv(5) by simp
-            with q_match n_match show ?thesis by simp
-          next
-            case (causal_step_byzantine pb new_event)
-            have ext_byz: "hist_extend pb new_event
-                              (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_byzantine by simp
-            from hist_extend_unique[OF ext ext_byz]
-            have ev_eq: "ev = new_event" by simp
-            have proc_new: "proc_of new_event = pb"
-              using causal_step_byzantine by simp
-            have proc_ev: "proc_of ev = q"
-              using ev_is_r2 by simp
-            have q_eq_pb: "q = pb" using ev_eq proc_new proc_ev by simp
-            have pby: "pb \<in> byzantine" using causal_step_byzantine by simp
-            with qc q_eq_pb partition_disj show ?thesis by blast
-          qed
+            using causal_step_recv_inversion[OF step ext ev_is_r2 qc]
+            by simp
           show ?thesis using nr1_le nr2_eq by linarith
         qed
       next
@@ -2023,53 +2033,11 @@ proof -
         \<comment> \<open>Case C: @{term r1} is the new Receive.  We derive a
             contradiction using @{const recv_causal_inv} on @{term cfg}
             and @{const delivered_drained_inv}.\<close>
-        \<comment> \<open>From @{thm step} with @{term ev_is_r1}: triple
+        \<comment> \<open>From the recv-rule inversion: triple
             @{term \<open>(p1, q, m1)\<close>} is in @{term cfg}'s buffer.\<close>
-        have buf_in:
-          "(p1, q, m1) \<in># cfg_inflight cfg"
-        proof -
-          from step ev_is_r1 ext
-          show ?thesis
-          proof (cases rule: causal_run_step.cases)
-            case (causal_step_internal p0 n0)
-            have ext_int: "hist_extend p0 (Internal p0 n0)
-                            (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_internal by simp
-            from hist_extend_unique[OF ext ext_int] ev_is_r1
-            show ?thesis by simp
-          next
-            case (causal_step_send p1' q1 n1 m1')
-            have ext_send: "hist_extend p1' (Send p1' n1 q1 m1')
-                              (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_send by simp
-            from hist_extend_unique[OF ext ext_send] ev_is_r1
-            show ?thesis by simp
-          next
-            case (causal_step_recv q0 p0 m0 n0)
-            have ext_recv: "hist_extend q0 (Receive q0 n0 p0 m0)
-                              (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_recv by simp
-            from hist_extend_unique[OF ext ext_recv]
-            have ev_eq: "ev = Receive q0 n0 p0 m0" by simp
-            have q_match: "q = q0" and p_match: "p1 = p0" and m_match: "m1 = m0"
-              using ev_eq ev_is_r1 by auto
-            with causal_step_recv(3) show ?thesis by simp
-          next
-            case (causal_step_byzantine pb new_event)
-            have ext_byz: "hist_extend pb new_event
-                              (cfg_hist cfg) (cfg_hist cfg')"
-              unfolding hist_extend_def using causal_step_byzantine by simp
-            from hist_extend_unique[OF ext ext_byz]
-            have ev_eq: "ev = new_event" by simp
-            have proc_new: "proc_of new_event = pb"
-              using causal_step_byzantine by simp
-            have proc_ev: "proc_of ev = q"
-              using ev_is_r1 by simp
-            have q_eq_pb: "q = pb" using ev_eq proc_new proc_ev by simp
-            have pby: "pb \<in> byzantine" using causal_step_byzantine by simp
-            with qc q_eq_pb partition_disj show ?thesis by blast
-          qed
-        qed
+        have buf_in: "(p1, q, m1) \<in># cfg_inflight cfg"
+          using causal_step_recv_inversion[OF step ext ev_is_r1 qc]
+          by simp
         \<comment> \<open>Whether @{term r2} is in @{term cfg} (subcase C1) or
             coincides with the new event @{term ev} (subcase C2),
             we derive a matching Receive for @{term \<open>(p1, m1)\<close>} in
@@ -2124,56 +2092,11 @@ proof -
           have self_loop: "bhb correct (cfg_hist cfg)
                             (Send p1 n1 q m1) (Send p1 n1 q m1)"
             using bhb_old send_eq by simp
-          \<comment> \<open>Apply @{const causal_recv_ok} for the new event @{term ev}.
-              We extract its content via case analysis on @{term step}.\<close>
+          \<comment> \<open>Recover @{const causal_recv_ok} for the new event via
+              the recv-rule inversion helper.\<close>
           have ok: "causal_recv_ok cfg q p1 m1"
-          proof -
-            from step ev_is_r1 ext
-            show ?thesis
-            proof (cases rule: causal_run_step.cases)
-              case (causal_step_internal p0 n0)
-              have ext_int: "hist_extend p0 (Internal p0 n0)
-                              (cfg_hist cfg) (cfg_hist cfg')"
-                unfolding hist_extend_def using causal_step_internal by simp
-              from hist_extend_unique[OF ext ext_int] ev_is_r1
-              show ?thesis by simp
-            next
-              case (causal_step_send p1' q1 n1' m1')
-              have ext_send: "hist_extend p1' (Send p1' n1' q1 m1')
-                                (cfg_hist cfg) (cfg_hist cfg')"
-                unfolding hist_extend_def using causal_step_send by simp
-              from hist_extend_unique[OF ext ext_send] ev_is_r1
-              show ?thesis by simp
-            next
-              case (causal_step_recv q0 p0 m0 n0)
-              have ext_recv: "hist_extend q0 (Receive q0 n0 p0 m0)
-                                (cfg_hist cfg) (cfg_hist cfg')"
-                unfolding hist_extend_def using causal_step_recv by simp
-              from hist_extend_unique[OF ext ext_recv]
-              have ev_eq: "ev = Receive q0 n0 p0 m0" by simp
-              have q_match': "q = q0" and p_match': "p1 = p0"
-                and m_match': "m1 = m0"
-                using ev_eq ev_is_r1 by auto
-              have ok0: "causal_recv_ok cfg q0 p0 m0"
-                using causal_step_recv by simp
-              from ok0 q_match' p_match' m_match' show ?thesis by simp
-            next
-              case (causal_step_byzantine pb new_event)
-              have ext_byz: "hist_extend pb new_event
-                                (cfg_hist cfg) (cfg_hist cfg')"
-                unfolding hist_extend_def using causal_step_byzantine by simp
-              from hist_extend_unique[OF ext ext_byz]
-              have ev_eq: "ev = new_event" by simp
-              have proc_new: "proc_of new_event = pb"
-                using causal_step_byzantine by simp
-              have proc_ev: "proc_of ev = q"
-                using ev_is_r1 by simp
-              have q_eq_pb: "q = pb" using ev_eq proc_new proc_ev by simp
-              have pby: "pb \<in> byzantine"
-                using causal_step_byzantine by simp
-              with qc q_eq_pb partition_disj show ?thesis by blast
-            qed
-          qed
+            using causal_step_recv_inversion[OF step ext ev_is_r1 qc]
+            by simp
           from ok obtain ns0 where
             send_p1_ns0: "Send p1 ns0 q m1 \<in> events_of (cfg_hist cfg)" and
             univ: "\<forall>p'' ns'' m''. p'' \<in> correct \<longrightarrow>
@@ -2406,14 +2329,16 @@ proof -
     unfolding bhb_over_brb_satisfied_def using bru bhb_co by simp
 qed
 
-text \<open>Operational T7 via the @{const causal_run} scheduler: a fair,
+text \<open>Operational T7 over the @{const causal_run} model: a fair,
 drained causal-scheduler run produces a history at which the naive
 \<open>CD_B\<close> algorithm with the @{const recv_from_history} view solves
 \<open>CD_B\<close> for every admissible adversary whose execution matches the
-run.  This closes the @{theory_text \<open>Primitives.thy\<close>} ``threaded
-BCB hypothesis'' loop: BCB's causal-delivery property is no longer a
-side hypothesis -- a richer scheduler model (causal\<open>_run\<close>) realises
-it operationally.\<close>
+run.  Parallel to @{thm fair_drained_run_solves_CD_B_broadcast} of
+@{theory_text \<open>Primitives.thy\<close>}, both bottoming out at
+@{thm T7_broadcast_via_bcb_over_brb}; the BHB causal-order theorem
+@{thm causal_run_satisfies_bhb_causal_order} is an independent
+structural guarantee of the schedule rather than a discharge of an
+active gap in this chain.\<close>
 
 theorem fair_drained_causal_run_solves_CD_B_broadcast:
   assumes run_cfg: "causal_run cfg"
